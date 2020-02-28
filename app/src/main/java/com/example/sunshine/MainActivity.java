@@ -66,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
                     Weather weather = serializeJson(stringResponse);
 
                     WeatherDbHelper db = new WeatherDbHelper(getApplicationContext());
+                    db.checkWeatherType(weather.getmWeatherType());
                     db.addWeather(weather);
 
                     String mainTemp = String.format("%.0f", weather.getmMainTemp());
@@ -95,7 +96,7 @@ public class MainActivity extends AppCompatActivity {
 
                 String mainTemp = String.format("%.0f", weather.getmMainTemp());
                 tempTextView.setText(mainTemp + "º");
-                //weatherTypeTextView.setText(weather.getmWeatherType().getMain());
+                weatherTypeTextView.setText(weather.getmWeatherType().getMain());
                 minMaxTempTextView.setText(weather.getmMinTemp() + "º / " + weather.getmMaxTemp() + "º");
                 feelsLikeTextView.setText("Feels like " + weather.getmFeelsLikeTemp()+ "º");
 

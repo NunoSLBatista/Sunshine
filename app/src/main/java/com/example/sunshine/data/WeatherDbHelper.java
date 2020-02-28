@@ -7,9 +7,12 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 import com.example.sunshine.data.WeatherContract.*;
+import com.example.sunshine.data.WeatherTypeContract.*;
+import com.example.sunshine.models.TypeWeather;
 import com.example.sunshine.models.Weather;
 
 import java.sql.Array;
+import java.sql.Wrapper;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,17 +23,27 @@ public class WeatherDbHelper extends SQLiteOpenHelper {
 
     private static final String SQL_CREATE_WEATHER =
             "CREATE TABLE " + WeatherEntry.TABLE_NAME + " (" +
-            WeatherEntry.COLUMN_CITY_ID + " INTEGER, " +
-            WeatherEntry.COLUMN_WEATHER_TYPE + " INTEGER, " +
-            WeatherEntry.COLUMN_MAIN_TEMP + " REAL, " +
-            WeatherEntry.COLUMN_TEMP_MIN + " REAL, " +
-            WeatherEntry.COLUMN_TEMP_MAX + " REAL, " +
-            WeatherEntry.COLUMN_PRESSURE + " REAL, " +
-            WeatherEntry.COLUMN_HUMIDITY + " REAL, " +
+                    WeatherEntry.COLUMN_CITY_ID + " INTEGER, " +
+                    WeatherEntry.COLUMN_WEATHER_TYPE + " INTEGER, " +
+                    WeatherEntry.COLUMN_MAIN_TEMP + " REAL, " +
+                    WeatherEntry.COLUMN_TEMP_MIN + " REAL, " +
+                    WeatherEntry.COLUMN_TEMP_MAX + " REAL, " +
+                    WeatherEntry.COLUMN_PRESSURE + " REAL, " +
+                    WeatherEntry.COLUMN_HUMIDITY + " REAL, " +
                     WeatherEntry.COLUMN_FEELS_LIKE_TEMP + " REAL, " +
-            WeatherEntry.COLUMN_DATE + " TEXT, " +
-            WeatherEntry.COLUMN_SUNSET + " TEXT, " +
-            WeatherEntry.COLUMN_SUNRISE + " TEXT)";
+                    WeatherEntry.COLUMN_DATE + " TEXT, " +
+                    WeatherEntry.COLUMN_SUNSET + " TEXT, " +
+                    WeatherEntry.COLUMN_SUNRISE + " TEXT)";
+
+    private static final String SQL_CREATE_TYPE_WEATHER =
+            "CREATE TABLE " + WeatherTypeEntry.TABLE_NAME + " (" +
+                    WeatherTypeEntry.COLUMN_ID + " INTEGER, " +
+                    WeatherTypeEntry.COLUMN_DESCRIPTION + " TEXT, " +
+                    WeatherTypeEntry.COLUMN_NAME + " TEXT, " +
+                    WeatherTypeEntry.COLUMN_ICON + " TEXT)";
+
+    private static  final String SQL_DELETE_TYPE_WEATHER =
+            "DROP TABLE IF EXISTS " + WeatherTypeEntry.TABLE_NAME;
 
     private static  final String SQL_DELETE_WEATHER =
             "DROP TABLE IF EXISTS " + WeatherEntry.TABLE_NAME;
@@ -43,11 +56,13 @@ public class WeatherDbHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(SQL_CREATE_WEATHER);
+        db.execSQL(SQL_CREATE_TYPE_WEATHER);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.execSQL(SQL_DELETE_WEATHER);
+        db.execSQL(SQL_DELETE_TYPE_WEATHER);
         onCreate(db);
     }
 
@@ -57,6 +72,7 @@ public class WeatherDbHelper extends SQLiteOpenHelper {
 
         ContentValues values = new ContentValues();
         values.put(WeatherEntry.COLUMN_CITY_ID, weather.getmCityId());
+        values.put(WeatherEntry.COLUMN_WEATHER_TYPE, weather.getmWeatherType().getId());
         values.put(WeatherEntry.COLUMN_MAIN_TEMP, weather.getmMainTemp());
         values.put(WeatherEntry.COLUMN_TEMP_MAX, weather.getmMaxTemp());
         values.put(WeatherEntry.COLUMN_TEMP_MIN, weather.getmMinTemp());
@@ -102,6 +118,9 @@ public class WeatherDbHelper extends SQLiteOpenHelper {
                 newWeather.setmSunrise(cursor.getString(cursor.getColumnIndex(WeatherEntry.COLUMN_SUNRISE)));
                 newWeather.setmSunset(cursor.getString(cursor.getColumnIndex(WeatherEntry.COLUMN_SUNSET)));
                 newWeather.setmDate(cursor.getString(cursor.getColumnIndex(WeatherEntry.COLUMN_DATE)));
+                TypeWeather typeWeather = new TypeWeather();
+                typeWeather.setId(cursor.getInt(cursor.getColumnIndex(WeatherEntry.COLUMN_WEATHER_TYPE)));
+                newWeather.setmWeatherType(this.getWeatherType(typeWeather.getId().toString()));
                 weatherList.add(newWeather);
             }
         }
@@ -111,5 +130,60 @@ public class WeatherDbHelper extends SQLiteOpenHelper {
         return weatherList;
 
     }
+
+    public void checkWeatherType(TypeWeather typeWeather){
+
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        String selection = WeatherTypeEntry.COLUMN_ID + " = ?";
+        String[] selectionArgs = {typeWeather.getId().toString()};
+
+        Cursor cursor = db.query(WeatherTypeEntry.TABLE_NAME, null, selection, selectionArgs, null, null, null);
+
+        if(!cursor.moveToFirst()){
+
+            ContentValues values = new ContentValues();
+
+            values.put(WeatherTypeEntry.COLUMN_ID, typeWeather.getId());
+            values.put(WeatherTypeEntry.COLUMN_NAME, typeWeather.getMain());
+            values.put(WeatherTypeEntry.COLUMN_DESCRIPTION, typeWeather.getDescription());
+            values.put(WeatherTypeEntry.COLUMN_ICON, typeWeather.getIcon());
+
+            db.insert(WeatherTypeEntry.TABLE_NAME, null, values);
+
+        }
+
+    }
+
+    public TypeWeather getWeatherType(String id){
+
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        TypeWeather typeWeather = new TypeWeather();
+
+        String selection = WeatherTypeEntry.COLUMN_ID + " = ?";
+        String[] selectionArgs = {id};
+
+        Cursor cursor = db.query(WeatherTypeEntry.TABLE_NAME, null, selection, selectionArgs, null, null, null);
+
+        if(cursor.moveToFirst()){
+
+           String name = cursor.getString(cursor.getColumnIndex(WeatherTypeEntry.COLUMN_NAME));
+           String description = cursor.getString(cursor.getColumnIndex(WeatherTypeEntry.COLUMN_DESCRIPTION));
+           String icon = cursor.getString(cursor.getColumnIndex(WeatherTypeEntry.COLUMN_ICON));
+
+           typeWeather.setId(Integer.valueOf(id));
+           typeWeather.setDescription(description);
+           typeWeather.setIcon(icon);
+           typeWeather.setMain(name);
+
+
+        }
+
+        return typeWeather;
+
+    }
+
+
 
 }
