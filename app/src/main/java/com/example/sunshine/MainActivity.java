@@ -121,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
         currentWeatherArrayList = getWeatherForecast();
 
         GetDataService retrofitInterface = RetrofitClientInstance.getRetrofitInstance().create(GetDataService.class);
-        Call<ResponseBody> call = retrofitInterface.getWeather("Lisboa", API_KEY, "Metric");
+        Call<ResponseBody> call = retrofitInterface.getWeather("Porto", API_KEY, "Metric");
 
         call.enqueue(new Callback<ResponseBody>() {
             @Override
@@ -229,7 +229,7 @@ public class MainActivity extends AppCompatActivity {
         tomorrowWeatherArrayList.clear();
 
         GetDataService retrofitInterface = RetrofitClientInstance.getRetrofitInstance().create(GetDataService.class);
-        Call<ResponseBody> call = retrofitInterface.getForecast("Lisboa", API_KEY, "Metric");
+        Call<ResponseBody> call = retrofitInterface.getForecast("Porto", API_KEY, "Metric");
 
         ArrayList<Weather> listWeather = new ArrayList<>();
 
@@ -308,6 +308,9 @@ public class MainActivity extends AppCompatActivity {
             Double humidity = jsonObjectMain.getDouble("humidity");
             Double pressure = jsonObjectMain.getDouble("pressure");
 
+            JSONObject windObject = jsonObject.getJSONObject("wind");
+            Double windSpeed = windObject.getDouble("speed");
+
             JSONArray weatherArray = jsonObject.getJSONArray("weather");
             JSONObject jsonObject1 = weatherArray.getJSONObject(0);
 
@@ -329,6 +332,7 @@ public class MainActivity extends AppCompatActivity {
             weather.setmHumidity(humidity);
             weather.setmFeelsLikeTemp(feelLikeTemp);
             weather.setmDate(date);
+            weather.setmSpeedWind(windSpeed);
 
 
         } catch (JSONException e){

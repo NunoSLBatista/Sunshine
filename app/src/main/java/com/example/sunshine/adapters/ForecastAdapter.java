@@ -1,6 +1,7 @@
 package com.example.sunshine.adapters;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,13 +24,19 @@ public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.Weathe
     // List to store all the contact details
     private ArrayList<Weather> weatherList;
     private Context mContext;
+    private MyAdapterListener myAdapterListener;
     String daysWeek[] = {"Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"};
 
 
     // Counstructor for the Class
-    public ForecastAdapter(ArrayList<Weather> weatherList, Context context) {
+    public ForecastAdapter(ArrayList<Weather> weatherList, Context context, MyAdapterListener listener) {
         this.weatherList = weatherList;
+        this.myAdapterListener = listener;
         this.mContext = context;
+    }
+
+    public interface MyAdapterListener {
+        void onDayClick(Context context, Weather weather);
     }
 
     // This method creates views for the RecyclerView by inflating the layout
@@ -65,6 +72,13 @@ public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.Weathe
             e.printStackTrace();
         }
 
+        holder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                myAdapterListener.onDayClick(mContext, weather);
+            }
+        });
+
         Picasso.with(mContext).load("https://openweathermap.org/img/wn/" + weather.getmWeatherType().getIcon() + "@2x.png").into(holder.iconWeather);
 
     }
@@ -81,8 +95,8 @@ public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.Weathe
             super(itemView);
 
             txtDayWeek = itemView.findViewById(R.id.weekDay);
-            txtMinTemp = itemView.findViewById(R.id.maxTemp);
-            textMaxTemp = itemView.findViewById(R.id.minTemp);
+            textMaxTemp = itemView.findViewById(R.id.maxTemp);
+            txtMinTemp = itemView.findViewById(R.id.minTemp);
             iconWeather = itemView.findViewById(R.id.tempIcon);
 
 
