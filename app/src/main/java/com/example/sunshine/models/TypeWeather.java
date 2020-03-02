@@ -1,6 +1,8 @@
 package com.example.sunshine.models;
 
-public class TypeWeather {
+import java.io.Serializable;
+
+public class TypeWeather implements Serializable {
 
     private Integer id;
     private String main;

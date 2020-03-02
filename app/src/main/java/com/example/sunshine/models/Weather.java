@@ -2,7 +2,13 @@ package com.example.sunshine.models;
 
 import com.google.gson.annotations.SerializedName;
 
-public class Weather {
+import java.io.Serializable;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+
+public class Weather implements Serializable {
 
     private Integer mCityId;
     private TypeWeather mWeatherType;
@@ -14,6 +20,7 @@ public class Weather {
     private String mDate;
     private String mSunrise;
     private String mSunset;
+    private Double mSpeedWind;
     private Double mFeelsLikeTemp;
 
     public Weather(Integer mCityId, TypeWeather mWeatherType, Double mMainTemp, Double mMinTemp, Double mMaxTemp, Double mPressure, Double mHumidity, String mDate, String mSunrise, String mSunset) {
@@ -31,6 +38,23 @@ public class Weather {
 
     public Weather(){
 
+    }
+
+    public Double getmSpeedWind() {
+        return mSpeedWind;
+    }
+
+    public void setmSpeedWind(Double mSpeedWind) {
+        this.mSpeedWind = mSpeedWind;
+    }
+
+    public Calendar getDateCalendar() throws ParseException {
+        Calendar cal = Calendar.getInstance();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+        Date d = dateFormat.parse(this.getmDate());
+        cal.setTime(d);
+        return cal;
     }
 
     public Double getmFeelsLikeTemp() {
@@ -106,16 +130,33 @@ public class Weather {
     }
 
     public String getmSunrise() {
-        return mSunrise;
+        long timestampLong = Long.parseLong(mSunrise)*1000;
+        Date d = new Date(timestampLong);
+        Calendar c = Calendar.getInstance();
+        c.setTime(d);
+        return String.format("%02d", c.get(Calendar.HOUR_OF_DAY)) + ":" + String.format("%02d", c.get(Calendar.MINUTE));
+    }
+
+    public String getmSunset() {
+        long timestampLong = Long.parseLong(mSunset)*1000;
+        Date d = new Date(timestampLong);
+        Calendar c = Calendar.getInstance();
+        c.setTime(d);
+        return String.format("%02d", c.get(Calendar.HOUR_OF_DAY)) + ":" + String.format("%02d", c.get(Calendar.MINUTE));
+    }
+
+    public Boolean checkSun(){
+        if(mSunrise == null){
+            return false;
+        }
+
+        return true;
     }
 
     public void setmSunrise(String mSunrise) {
         this.mSunrise = mSunrise;
     }
 
-    public String getmSunset() {
-        return mSunset;
-    }
 
     public void setmSunset(String mSunset) {
         this.mSunset = mSunset;

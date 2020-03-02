@@ -17,4 +17,8 @@ public interface GetDataService {
     Call<ResponseBody> getWeather(
             @Query("q") String param1, @Query("appid") String param2, @Query("units") String param3);
 
+    @GET("/data/2.5/forecast")
+    Call<ResponseBody> getForecast(
+            @Query("q") String cityName, @Query("appid") String api, @Query("units") String units);
+
 }
