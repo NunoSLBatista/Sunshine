@@ -25,7 +25,7 @@ public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.Weathe
     private ArrayList<Weather> weatherList;
     private Context mContext;
     private MyAdapterListener myAdapterListener;
-    String daysWeek[] = {"Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"};
+    String daysWeek[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",};
 
 
     // Counstructor for the Class

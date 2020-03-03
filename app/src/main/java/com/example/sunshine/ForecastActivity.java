@@ -66,6 +66,7 @@ public class ForecastActivity extends AppCompatActivity implements ForecastAdapt
             }
         }
 
+
         ForecastAdapter adapter = new ForecastAdapter(newWeatherArrayList, getApplicationContext(), this);
         forecastRecycler.setLayoutManager(new LinearLayoutManager(getApplicationContext(), RecyclerView.VERTICAL, false));
         forecastRecycler.setAdapter(adapter);

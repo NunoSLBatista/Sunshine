@@ -21,4 +21,12 @@ public interface GetDataService {
     Call<ResponseBody> getForecast(
             @Query("q") String cityName, @Query("appid") String api, @Query("units") String units);
 
+    @GET("/data/2.5/weather")
+    Call<ResponseBody> getWeatherCoord(
+            @Query("lat") String latitude, @Query("lon") String longitude,  @Query("appid") String api, @Query("units") String units);
+
+    @GET("/data/2.5/forecast")
+    Call<ResponseBody> getForecastCoord(
+            @Query("lat") String latitude, @Query("lon") String longitude, @Query("appid") String api, @Query("units") String units);
+
 }

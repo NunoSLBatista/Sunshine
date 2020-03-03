@@ -2,7 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.sunshine">
     <!-- Internet Permission -->
-    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.INTERNET" /> <!-- Location permission -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <application
         android:allowBackup="true"
@@ -11,8 +12,9 @@
         android:networkSecurityConfig="@xml/xml"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme">
-        <activity android:name=".DetailForecastActivity"></activity>
+        android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+        <activity android:name=".SearchActivity"></activity>
+        <activity android:name=".DetailForecastActivity" />
         <activity android:name=".ForecastActivity" />
         <activity android:name=".MainActivity">
             <intent-filter>

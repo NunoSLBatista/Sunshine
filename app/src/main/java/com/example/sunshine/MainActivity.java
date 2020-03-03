@@ -1,16 +1,30 @@
 package com.example.sunshine;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.appcompat.widget.Toolbar;
 
 import com.example.sunshine.adapters.WeatherForecastAdapter;
 import com.example.sunshine.data.WeatherDbHelper;
@@ -18,8 +32,6 @@ import com.example.sunshine.models.TypeWeather;
 import com.example.sunshine.models.Weather;
 import com.example.sunshine.network.GetDataService;
 import com.example.sunshine.network.RetrofitClientInstance;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import com.squareup.picasso.Picasso;
 
 import org.json.JSONArray;
@@ -27,14 +39,15 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.text.DateFormat;
+import java.io.InputStream;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
 import okhttp3.ResponseBody;
+import pub.devrel.easypermissions.AfterPermissionGranted;
+import pub.devrel.easypermissions.EasyPermissions;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -50,7 +63,6 @@ public class MainActivity extends AppCompatActivity {
     TextView weatherTypeTextView;
     TextView tempTextView;
     TextView minMaxTempTextView;
-    TextView descriptionTextView;
     ImageView weatherIcon;
     TextView feelsLikeTextView;
     RecyclerView weatherHourRecycler;
@@ -64,63 +76,84 @@ public class MainActivity extends AppCompatActivity {
     TextView pressureTextView;
     Calendar cal = Calendar.getInstance();
 
+    private final int REQUEST_LOCATION_PERMISSION = 1;
+    EditText citySearch;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        weatherTypeTextView = (TextView) findViewById(R.id.modeTextView);
-        tempTextView = (TextView) findViewById(R.id.tempTextView);
-        minMaxTempTextView = (TextView) findViewById(R.id.minMaxTemp);
-        weatherIcon = (ImageView) findViewById(R.id.weatherModeIcon);
-        feelsLikeTextView = (TextView) findViewById(R.id.feelLikeTemp);
-        weatherHourRecycler = (RecyclerView) findViewById(R.id.forecastWeather);
-        sunriseTextView = (TextView)  findViewById(R.id.sunriseTxt);
-        sunsetTextView = (TextView) findViewById(R.id.sunsetTxt);
-        humidityTextView = (TextView) findViewById(R.id.humidityTextView);
-        todayBox = (TextView) findViewById(R.id.todayBox);
-        tomorrowBox = (TextView) findViewById(R.id.tommorowBox);
-        next5DaysBox = (TextView) findViewById(R.id.next5Days);
-        pressureTextView = (TextView) findViewById(R.id.pressureText);
-        windTextView = (TextView) findViewById(R.id.windTxt);
+        weatherTypeTextView =  findViewById(R.id.modeTextView);
+        tempTextView =  findViewById(R.id.tempTextView);
+        minMaxTempTextView =  findViewById(R.id.minMaxTemp);
+        weatherIcon =  findViewById(R.id.weatherModeIcon);
+        feelsLikeTextView =  findViewById(R.id.feelLikeTemp);
+        weatherHourRecycler =  findViewById(R.id.forecastWeather);
+        sunriseTextView =  findViewById(R.id.sunriseTxt);
+        sunsetTextView =  findViewById(R.id.sunsetTxt);
+        humidityTextView =  findViewById(R.id.humidityTextView);
+        todayBox =  findViewById(R.id.todayBox);
+        tomorrowBox =  findViewById(R.id.tommorowBox);
+        next5DaysBox =  findViewById(R.id.next5Days);
+        pressureTextView =  findViewById(R.id.pressureText);
+        windTextView =  findViewById(R.id.windTxt);
+        Toolbar toolbar = findViewById(R.id.tool_bar);
 
-        todayBox.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                updateWeatherDay(currentWeather);
-                WeatherForecastAdapter adapter = new WeatherForecastAdapter(currentWeatherArrayList, getApplicationContext());
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+
+        // Setting toolbar as the ActionBar with setSupportActionBar() call
+        setSupportActionBar(toolbar);
+
+        // Get a reference to the AutoCompleteTextView in the layout
+        citySearch = findViewById(R.id.autocomplete_country);
+
+        requestLocationPermission();
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+            return;
+        }
+
+        LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+        assert lm != null;
+        Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+
+       lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 1000, locationListener);
+
+
+
+        todayBox.setOnClickListener(v -> {
+            updateWeatherDay(currentWeather);
+            WeatherForecastAdapter adapter = new WeatherForecastAdapter(currentWeatherArrayList, getApplicationContext());
+            weatherHourRecycler.setLayoutManager(new LinearLayoutManager(getApplicationContext(), RecyclerView.HORIZONTAL, false));
+            weatherHourRecycler.setAdapter(adapter);
+
+        });
+
+        tomorrowBox.setOnClickListener(v -> {
+
+            if(tomorrowWeatherArrayList.size() > 0){
+                updateWeatherDay(tomorrowWeatherArrayList.get(4));
+                WeatherForecastAdapter adapter = new WeatherForecastAdapter(tomorrowWeatherArrayList, getApplicationContext());
                 weatherHourRecycler.setLayoutManager(new LinearLayoutManager(getApplicationContext(), RecyclerView.HORIZONTAL, false));
                 weatherHourRecycler.setAdapter(adapter);
-
             }
+
         });
 
-        tomorrowBox.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                if(tomorrowWeatherArrayList.size() > 0){
-                    updateWeatherDay(currentWeatherArrayList.get(0));
-                    WeatherForecastAdapter adapter = new WeatherForecastAdapter(tomorrowWeatherArrayList, getApplicationContext());
-                    weatherHourRecycler.setLayoutManager(new LinearLayoutManager(getApplicationContext(), RecyclerView.HORIZONTAL, false));
-                    weatherHourRecycler.setAdapter(adapter);
-                }
-
-            }
+        next5DaysBox.setOnClickListener(v -> {
+             Intent forecastActivity = new Intent(getApplicationContext(), ForecastActivity.class);
+             forecastActivity.putExtra("listForecast", weatherArrayList);
+             startActivity(forecastActivity);
         });
-
-        next5DaysBox.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                 Intent forecastActivity = new Intent(getApplicationContext(), ForecastActivity.class);
-                 forecastActivity.putExtra("listForecast", weatherArrayList);
-                 startActivity(forecastActivity);
-            }
-        });
-
-        currentWeatherArrayList = getWeatherForecast();
 
         GetDataService retrofitInterface = RetrofitClientInstance.getRetrofitInstance().create(GetDataService.class);
+        Call<ResponseBody> callForecast = retrofitInterface.getForecast("Porto", API_KEY, "Metric");
+
+
         Call<ResponseBody> call = retrofitInterface.getWeather("Porto", API_KEY, "Metric");
 
         call.enqueue(new Callback<ResponseBody>() {
@@ -161,6 +194,105 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_search) {
+
+            String cityText = citySearch.getText().toString();
+
+            GetDataService retrofitInterface = RetrofitClientInstance.getRetrofitInstance().create(GetDataService.class);
+            Call<ResponseBody> call = retrofitInterface.getWeather(cityText, API_KEY, "Metric");
+
+            getWeatherByCity(call);
+            Call<ResponseBody> callForecast = retrofitInterface.getForecast(cityText, API_KEY, "Metric");
+
+            WeatherForecastAdapter adapter = new WeatherForecastAdapter(getWeatherForecast(callForecast), getApplicationContext());
+            weatherHourRecycler.setLayoutManager(new LinearLayoutManager(getApplicationContext(), RecyclerView.HORIZONTAL, false));
+            weatherHourRecycler.setAdapter(adapter);
+
+
+
+
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    public void getWeatherByCity(Call<ResponseBody> call){
+
+        call.enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                try{
+                    String stringResponse = response.body().string();
+                    Weather weather = serializeJson(stringResponse);
+                    currentWeather = weather;
+
+                    WeatherDbHelper db = new WeatherDbHelper(getApplicationContext());
+                    db.checkWeatherType(weather.getmWeatherType());
+                    db.addWeather(weather);
+
+                    updateWeatherDay(currentWeather);
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                Toast.makeText(MainActivity.this, t.getMessage(), Toast.LENGTH_SHORT).show();
+
+                WeatherDbHelper db = new WeatherDbHelper(getApplicationContext());
+                List<Weather> weatherList = db.getAll("", "2147714");
+
+                Weather weather = weatherList.get(0);
+
+                String mainTemp = String.format("%.0f", weather.getmMainTemp());
+                tempTextView.setText(mainTemp + "º");
+                weatherTypeTextView.setText(weather.getmWeatherType().getMain());
+                minMaxTempTextView.setText(weather.getmMinTemp() + "º / " + weather.getmMaxTemp() + "º");
+                feelsLikeTextView.setText("Feels like " + weather.getmFeelsLikeTemp()+ "º");
+
+            }
+        });
+
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        // Forward results to EasyPermissions
+        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
+    }
+
+    @AfterPermissionGranted(REQUEST_LOCATION_PERMISSION)
+    public void requestLocationPermission() {
+        String[] perms = {Manifest.permission.ACCESS_FINE_LOCATION};
+        if(EasyPermissions.hasPermissions(this, perms)) {
+            Toast.makeText(this, "Permission already granted", Toast.LENGTH_SHORT).show();
+        }
+        else {
+            EasyPermissions.requestPermissions(this, "Please grant the location permission", REQUEST_LOCATION_PERMISSION, perms);
+        }
     }
 
     public Weather serializeJson(String response){
@@ -223,13 +355,10 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public ArrayList<Weather> getWeatherForecast(){
+    public ArrayList<Weather> getWeatherForecast(Call<ResponseBody> call){
 
         weatherArrayList.clear();
         tomorrowWeatherArrayList.clear();
-
-        GetDataService retrofitInterface = RetrofitClientInstance.getRetrofitInstance().create(GetDataService.class);
-        Call<ResponseBody> call = retrofitInterface.getForecast("Porto", API_KEY, "Metric");
 
         ArrayList<Weather> listWeather = new ArrayList<>();
 
@@ -266,10 +395,11 @@ public class MainActivity extends AppCompatActivity {
 
                     }
 
-                    WeatherForecastAdapter adapter = new WeatherForecastAdapter(listWeather, getApplicationContext());
+                    currentWeatherArrayList = listWeather;
+
+                    WeatherForecastAdapter adapter = new WeatherForecastAdapter(currentWeatherArrayList, getApplicationContext());
                     weatherHourRecycler.setLayoutManager(new LinearLayoutManager(getApplicationContext(), RecyclerView.HORIZONTAL, false));
                     weatherHourRecycler.setAdapter(adapter);
-
 
                 } catch (IOException e){
                     e.printStackTrace();
@@ -369,6 +499,67 @@ public class MainActivity extends AppCompatActivity {
         Picasso.with(getApplicationContext()).load("https://openweathermap.org/img/wn/" + newWeather.getmWeatherType().getIcon() +  "@2x.png").into(weatherIcon);
 
     }
+
+    private final LocationListener locationListener = new LocationListener() {
+
+        public void onLocationChanged(Location location) {
+
+            weatherArrayList.clear();
+            tomorrowWeatherArrayList.clear();
+
+             double longitude = location.getLongitude();
+             double latitude = location.getLatitude();
+
+            GetDataService retrofitInterface = RetrofitClientInstance.getRetrofitInstance().create(GetDataService.class);
+            Call<ResponseBody> call = retrofitInterface.getWeatherCoord(String.valueOf(latitude), String.valueOf(longitude), API_KEY, "Metric");
+
+            call.enqueue(new Callback<ResponseBody>() {
+                @Override
+                public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                    try{
+                        String stringResponse = response.body().string();
+                        Weather weather = serializeJson(stringResponse);
+                        currentWeather = weather;
+
+                        WeatherDbHelper db = new WeatherDbHelper(getApplicationContext());
+                        db.checkWeatherType(weather.getmWeatherType());
+                        db.addWeather(weather);
+
+                        updateWeatherDay(currentWeather);
+
+                        GetDataService retrofitInterface = RetrofitClientInstance.getRetrofitInstance().create(GetDataService.class);
+                        Call<ResponseBody> callForecast = retrofitInterface.getForecastCoord(String.valueOf(latitude), String.valueOf(longitude), API_KEY, "Metric");
+
+                        getWeatherForecast(callForecast);
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ResponseBody> call, Throwable t) {
+
+                }
+            });
+
+        }
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+
+        }
+    };
 
 
 }

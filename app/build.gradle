@@ -46,5 +46,7 @@ dependencies {
     implementation 'androidx.recyclerview:recyclerview:1.1.0'
     implementation 'com.squareup.picasso:picasso:2.5.2'
 
+    implementation 'pub.devrel:easypermissions:3.0.0'
+
 
 }
