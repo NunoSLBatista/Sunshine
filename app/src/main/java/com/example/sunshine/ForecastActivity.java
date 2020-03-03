@@ -29,7 +29,7 @@ public class ForecastActivity extends AppCompatActivity implements ForecastAdapt
         forecastRecycler = (RecyclerView) findViewById(R.id.forecastRecycler);
 
         weatherArrayList = (ArrayList<Weather>) getIntent().getSerializableExtra("listForecast");
-        Log.d("MainTemp", weatherArrayList.get(0).getmMaxTemp().toString());
+        Log.d("MainTemp", weatherArrayList.get(0).getMain().getTemp().toString());
 
         Double media = 0.0;
         Double minTemp = 200.0;
@@ -38,31 +38,29 @@ public class ForecastActivity extends AppCompatActivity implements ForecastAdapt
         for(int i = 0; i < weatherArrayList.size(); i++){
             if(i % 7 == 0 && i != 0){
 
-                if(maxTemp < weatherArrayList.get(i).getmMaxTemp()){
-                    maxTemp = weatherArrayList.get(i).getmMaxTemp();
+                if(maxTemp < weatherArrayList.get(i).getMain().getTempMax()){
+                    maxTemp = weatherArrayList.get(i).getMain().getTempMax();
                 }
-                if(minTemp > weatherArrayList.get(i).getmMinTemp()){
-                    minTemp = weatherArrayList.get(i).getmMinTemp();
+                if(minTemp > weatherArrayList.get(i).getMain().getTempMin()){
+                    minTemp = weatherArrayList.get(i).getMain().getTempMin();
                 }
 
-                media += weatherArrayList.get(i).getmMainTemp();
+                media += weatherArrayList.get(i).getMain().getTemp();
                 media = media / 8;
-                weatherArrayList.get(i).setmMinTemp(minTemp);
-                weatherArrayList.get(i).setmMaxTemp(maxTemp);
-                weatherArrayList.get(i).setmWeatherType(weatherArrayList.get(i - 4).getmWeatherType());
-                Log.d("Media", weatherArrayList.get(i).getmMainTemp().toString());
+                weatherArrayList.get(i).getMain().setTempMin(minTemp);
+                weatherArrayList.get(i).getMain().setTempMax(maxTemp);
                 newWeatherArrayList.add(weatherArrayList.get(i));
                 media = 0.0;
                 minTemp = 200.0;
                 maxTemp = -200.0;
             } else {
-                if(maxTemp < weatherArrayList.get(i).getmMaxTemp()){
-                    maxTemp = weatherArrayList.get(i).getmMaxTemp();
+                if(maxTemp < weatherArrayList.get(i).getMain().getTempMax()){
+                    maxTemp = weatherArrayList.get(i).getMain().getTempMax();
                 }
-                if(minTemp > weatherArrayList.get(i).getmMinTemp()){
-                    minTemp = weatherArrayList.get(i).getmMinTemp();
+                if(minTemp > weatherArrayList.get(i).getMain().getTempMin()){
+                    minTemp = weatherArrayList.get(i).getMain().getTempMin();
                 }
-                media += weatherArrayList.get(i).getmMainTemp();
+                media += weatherArrayList.get(i).getMain().getTemp();
             }
         }
 

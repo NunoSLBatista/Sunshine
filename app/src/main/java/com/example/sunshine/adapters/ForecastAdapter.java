@@ -60,8 +60,8 @@ public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.Weathe
     public void onBindViewHolder(@NonNull WeatherHolder holder, final int position) {
         final Weather weather = weatherList.get(position);
 
-        String maxTemp = String.format("%.0f", weather.getmMaxTemp()) + "º";
-        String minTemp = String.format("%.0f", weather.getmMinTemp()) + "º";
+        String maxTemp = String.format("%.0f", weather.getMain().getTempMax()) + "º";
+        String minTemp = String.format("%.0f", weather.getMain().getTempMin()) + "º";
 
         holder.textMaxTemp.setText(maxTemp);
         holder.txtMinTemp.setText(minTemp);
@@ -79,7 +79,7 @@ public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.Weathe
             }
         });
 
-        Picasso.with(mContext).load("https://openweathermap.org/img/wn/" + weather.getmWeatherType().getIcon() + "@2x.png").into(holder.iconWeather);
+        Picasso.with(mContext).load("https://openweathermap.org/img/wn/" + weather.getWeatherList().get(0).getIcon() + "@2x.png").into(holder.iconWeather);
 
     }
 

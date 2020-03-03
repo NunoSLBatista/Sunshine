@@ -7,12 +7,14 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 import com.example.sunshine.data.WeatherContract.*;
+import com.example.sunshine.data.ForecastContract.*;
 import com.example.sunshine.data.WeatherTypeContract.*;
-import com.example.sunshine.models.TypeWeather;
+import com.example.sunshine.models.City;
+import com.example.sunshine.models.Main;
 import com.example.sunshine.models.Weather;
+import com.example.sunshine.models.Weather2;
+import com.example.sunshine.models.WeatherResult;
 
-import java.sql.Array;
-import java.sql.Wrapper;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,6 +37,19 @@ public class WeatherDbHelper extends SQLiteOpenHelper {
                     WeatherEntry.COLUMN_SUNSET + " TEXT, " +
                     WeatherEntry.COLUMN_SUNRISE + " TEXT)";
 
+    private static final String SQL_CREATE_FORECAST =
+            "CREATE TABLE " + ForecastEntry.TABLE_NAME + " (" +
+                    ForecastEntry.COLUMN_WEATHER_ID + " INTEGER, " +
+                    ForecastEntry.COLUMN_WEATHER_TYPE + " INTEGER, " +
+                    ForecastEntry.COLUMN_MAIN_TEMP + " REAL, " +
+                    ForecastEntry.COLUMN_TEMP_MIN + " REAL, " +
+                    ForecastEntry.COLUMN_TEMP_MAX + " REAL, " +
+                    ForecastEntry.COLUMN_PRESSURE + " REAL, " +
+                    ForecastEntry.COLUMN_HUMIDITY + " REAL, " +
+                    ForecastEntry.COLUMN_FEELS_LIKE_TEMP + " REAL, " +
+                    ForecastEntry.COLUMN_DATE + " TEXT)";
+
+
     private static final String SQL_CREATE_TYPE_WEATHER =
             "CREATE TABLE " + WeatherTypeEntry.TABLE_NAME + " (" +
                     WeatherTypeEntry.COLUMN_ID + " INTEGER, " +
@@ -43,6 +58,9 @@ public class WeatherDbHelper extends SQLiteOpenHelper {
                     WeatherTypeEntry.COLUMN_ICON + " TEXT)";
 
     private static  final String SQL_DELETE_TYPE_WEATHER =
+            "DROP TABLE IF EXISTS " + ForecastEntry.TABLE_NAME;
+
+    private static  final String SQL_DELETE_FORECAST =
             "DROP TABLE IF EXISTS " + WeatherTypeEntry.TABLE_NAME;
 
     private static  final String SQL_DELETE_WEATHER =
@@ -57,70 +75,76 @@ public class WeatherDbHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(SQL_CREATE_WEATHER);
         db.execSQL(SQL_CREATE_TYPE_WEATHER);
+        db.execSQL(SQL_CREATE_FORECAST);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.execSQL(SQL_DELETE_WEATHER);
         db.execSQL(SQL_DELETE_TYPE_WEATHER);
+        db.execSQL(SQL_DELETE_FORECAST);
         onCreate(db);
     }
 
-    public long addWeather(Weather weather){
+
+
+    public long addWeather(WeatherResult weather){
 
         SQLiteDatabase db = this.getWritableDatabase();
 
         ContentValues values = new ContentValues();
-        values.put(WeatherEntry.COLUMN_CITY_ID, weather.getmCityId());
-        values.put(WeatherEntry.COLUMN_WEATHER_TYPE, weather.getmWeatherType().getId());
-        values.put(WeatherEntry.COLUMN_MAIN_TEMP, weather.getmMainTemp());
-        values.put(WeatherEntry.COLUMN_TEMP_MAX, weather.getmMaxTemp());
-        values.put(WeatherEntry.COLUMN_TEMP_MIN, weather.getmMinTemp());
-        values.put(WeatherEntry.COLUMN_FEELS_LIKE_TEMP, weather.getmFeelsLikeTemp());
-        values.put(WeatherEntry.COLUMN_PRESSURE, weather.getmPressure());
-        values.put(WeatherEntry.COLUMN_HUMIDITY, weather.getmHumidity());
-        values.put(WeatherEntry.COLUMN_DATE, weather.getmDate());
-        values.put(WeatherEntry.COLUMN_SUNSET, weather.getmSunset());
-        values.put(WeatherEntry.COLUMN_SUNRISE, weather.getmSunrise());
+        values.put(WeatherEntry.COLUMN_CITY_ID, weather.getCity().getId());
+        values.put(WeatherEntry.COLUMN_WEATHER_TYPE, weather.getWeatherList().get(0).getId());
+        values.put(WeatherEntry.COLUMN_MAIN_TEMP, weather.getMain().getTemp());
+        values.put(WeatherEntry.COLUMN_TEMP_MAX, weather.getMain().getTempMax());
+        values.put(WeatherEntry.COLUMN_TEMP_MIN, weather.getMain().getTempMin());
+        values.put(WeatherEntry.COLUMN_FEELS_LIKE_TEMP, weather.getMain().getFeelsLike());
+        values.put(WeatherEntry.COLUMN_PRESSURE, weather.getMain().getPressure());
+        values.put(WeatherEntry.COLUMN_HUMIDITY, weather.getMain().getHumidity());
+        //values.put(WeatherEntry.COLUMN_DATE, weather.getMain().g);
+        values.put(WeatherEntry.COLUMN_SUNSET, weather.getCity().getSunset());
+        values.put(WeatherEntry.COLUMN_SUNRISE, weather.getCity().getSunrise());
 
         //Insert the new row, returning the primery key value for the new row
         return db.insert(WeatherEntry.TABLE_NAME, null, values);
 
     }
 
-    public List<Weather> getAll(String day, String city){
+
+    public List<WeatherResult> getAll(){
 
         SQLiteDatabase db = this.getWritableDatabase();
 
-        List<Weather> weatherList = new ArrayList<>();
+        List<WeatherResult> weatherList = new ArrayList<>();
 
-        String selection = WeatherEntry.COLUMN_CITY_ID + " = ?";
-        String[] selectionArgs = { city };
 
         Cursor cursor = db.query(WeatherEntry.TABLE_NAME,
                 null,
-                selection,
-                selectionArgs,
+                null,
+                null,
                 null,
                 null,
                 null);
 
         if(cursor.moveToFirst()){
             while (cursor.moveToNext()){
-                Weather newWeather = new Weather();
-                newWeather.setmCityId(cursor.getInt(cursor.getColumnIndex(WeatherEntry.COLUMN_CITY_ID)));
-                newWeather.setmMainTemp(cursor.getDouble(cursor.getColumnIndex(WeatherEntry.COLUMN_MAIN_TEMP)));
-                newWeather.setmMaxTemp(cursor.getDouble(cursor.getColumnIndex(WeatherEntry.COLUMN_TEMP_MAX)));
-                newWeather.setmMinTemp(cursor.getDouble(cursor.getColumnIndex(WeatherEntry.COLUMN_TEMP_MIN)));
-                newWeather.setmHumidity(cursor.getDouble(cursor.getColumnIndex(WeatherEntry.COLUMN_HUMIDITY)));
-                newWeather.setmFeelsLikeTemp(cursor.getDouble(cursor.getColumnIndex(WeatherEntry.COLUMN_FEELS_LIKE_TEMP)));
-                newWeather.setmPressure(cursor.getDouble(cursor.getColumnIndex(WeatherEntry.COLUMN_PRESSURE)));
-                newWeather.setmSunrise(cursor.getString(cursor.getColumnIndex(WeatherEntry.COLUMN_SUNRISE)));
-                newWeather.setmSunset(cursor.getString(cursor.getColumnIndex(WeatherEntry.COLUMN_SUNSET)));
-                newWeather.setmDate(cursor.getString(cursor.getColumnIndex(WeatherEntry.COLUMN_DATE)));
-                TypeWeather typeWeather = new TypeWeather();
-                typeWeather.setId(cursor.getInt(cursor.getColumnIndex(WeatherEntry.COLUMN_WEATHER_TYPE)));
-                newWeather.setmWeatherType(this.getWeatherType(typeWeather.getId().toString()));
+                WeatherResult newWeather = new WeatherResult();
+                newWeather.setCity(new City());
+                newWeather.getCity().setId(cursor.getInt(cursor.getColumnIndex(WeatherEntry.COLUMN_CITY_ID)));
+                newWeather.setMain( new Main());
+                newWeather.setWeatherList(new ArrayList<>());
+                newWeather.getMain().setTemp(cursor.getDouble(cursor.getColumnIndex(WeatherEntry.COLUMN_MAIN_TEMP)));
+                newWeather.getMain().setTempMax(cursor.getDouble(cursor.getColumnIndex(WeatherEntry.COLUMN_TEMP_MAX)));
+                newWeather.getMain().setTempMin(cursor.getDouble(cursor.getColumnIndex(WeatherEntry.COLUMN_TEMP_MIN)));
+                newWeather.getMain().setHumidity(cursor.getInt(cursor.getColumnIndex(WeatherEntry.COLUMN_HUMIDITY)));
+                newWeather.getMain().setFeelsLike(cursor.getDouble(cursor.getColumnIndex(WeatherEntry.COLUMN_FEELS_LIKE_TEMP)));
+                newWeather.getMain().setPressure(cursor.getDouble(cursor.getColumnIndex(WeatherEntry.COLUMN_PRESSURE)));
+                newWeather.getCity().setSunrise(cursor.getString(cursor.getColumnIndex(WeatherEntry.COLUMN_SUNRISE)));
+                newWeather.getCity().setSunrise(cursor.getString(cursor.getColumnIndex(WeatherEntry.COLUMN_SUNSET)));
+              //  newWeather.setmDate(cursor.getString(cursor.getColumnIndex(WeatherEntry.COLUMN_DATE)));
+                List<Weather2> weather2s = new ArrayList<>();
+                weather2s.add(this.getWeatherType(cursor.getString(cursor.getColumnIndex(WeatherEntry.COLUMN_WEATHER_TYPE))));
+                newWeather.setWeatherList(weather2s);
                 weatherList.add(newWeather);
             }
         }
@@ -131,7 +155,67 @@ public class WeatherDbHelper extends SQLiteOpenHelper {
 
     }
 
-    public void checkWeatherType(TypeWeather typeWeather){
+    public long addWeather2(Weather weather){
+
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put(ForecastEntry.COLUMN_WEATHER_TYPE, weather.getWeatherList().get(0).getId());
+        values.put(ForecastEntry.COLUMN_MAIN_TEMP, weather.getMain().getTemp());
+        values.put(ForecastEntry.COLUMN_TEMP_MAX, weather.getMain().getTempMax());
+        values.put(ForecastEntry.COLUMN_TEMP_MIN, weather.getMain().getTempMin());
+        values.put(ForecastEntry.COLUMN_FEELS_LIKE_TEMP, weather.getMain().getFeelsLike());
+        values.put(ForecastEntry.COLUMN_PRESSURE, weather.getMain().getPressure());
+        values.put(ForecastEntry.COLUMN_HUMIDITY, weather.getMain().getHumidity());
+        values.put(WeatherEntry.COLUMN_DATE, weather.getDate());
+
+        //Insert the new row, returning the primery key value for the new row
+        return db.insert(ForecastEntry.TABLE_NAME, null, values);
+
+    }
+
+
+    public List<Weather> getAll2(){
+
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        List<Weather> weatherList = new ArrayList<>();
+
+
+        Cursor cursor = db.query(ForecastEntry.TABLE_NAME,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
+
+        if(cursor.moveToFirst()){
+            while (cursor.moveToNext()){
+                Weather newWeather = new Weather();
+                newWeather.setMain( new Main());
+                newWeather.setWeatherList(new ArrayList<>());
+                newWeather.getMain().setTemp(cursor.getDouble(cursor.getColumnIndex(ForecastEntry.COLUMN_MAIN_TEMP)));
+                newWeather.getMain().setTempMax(cursor.getDouble(cursor.getColumnIndex(ForecastEntry.COLUMN_TEMP_MAX)));
+                newWeather.getMain().setTempMin(cursor.getDouble(cursor.getColumnIndex(ForecastEntry.COLUMN_TEMP_MIN)));
+                newWeather.getMain().setHumidity(cursor.getInt(cursor.getColumnIndex(ForecastEntry.COLUMN_HUMIDITY)));
+                newWeather.getMain().setFeelsLike(cursor.getDouble(cursor.getColumnIndex(ForecastEntry.COLUMN_FEELS_LIKE_TEMP)));
+                newWeather.getMain().setPressure(cursor.getDouble(cursor.getColumnIndex(ForecastEntry.COLUMN_PRESSURE)));
+
+                List<Weather2> weather2s = new ArrayList<>();
+                weather2s.add(this.getWeatherType(cursor.getString(cursor.getColumnIndex(ForecastEntry.COLUMN_WEATHER_TYPE))));
+                newWeather.setWeatherList(weather2s);
+                weatherList.add(newWeather);
+            }
+        }
+
+        cursor.close();
+
+        return weatherList;
+
+    }
+
+    public void checkWeatherType(Weather2 typeWeather){
 
         SQLiteDatabase db = this.getWritableDatabase();
 
@@ -155,11 +239,11 @@ public class WeatherDbHelper extends SQLiteOpenHelper {
 
     }
 
-    public TypeWeather getWeatherType(String id){
+    public Weather2 getWeatherType(String id){
 
         SQLiteDatabase db = this.getWritableDatabase();
 
-        TypeWeather typeWeather = new TypeWeather();
+        Weather2 typeWeather = new Weather2();
 
         String selection = WeatherTypeEntry.COLUMN_ID + " = ?";
         String[] selectionArgs = {id};

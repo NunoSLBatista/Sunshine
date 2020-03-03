@@ -45,17 +45,17 @@ public class DetailForecastActivity extends AppCompatActivity {
 
     private void updateWeatherDay(Weather newWeather){
 
-        String mainTemp = String.format("%.0f", newWeather.getmMainTemp());
+        String mainTemp = String.format("%.0f", newWeather.getMain().getTemp());
 
         tempTextView.setText(mainTemp + "º");
-        pressureTextView.setText(newWeather.getmPressure().toString());
-        windTextView.setText(newWeather.getmSpeedWind().toString());
-        weatherTypeTextView.setText(newWeather.getmWeatherType().getMain());
-        minMaxTempTextView.setText(newWeather.getmMinTemp() + "º / " + newWeather.getmMaxTemp() + "º");
-        feelsLikeTextView.setText("Feels like " + newWeather.getmFeelsLikeTemp() + "º");
-        humidityTextView.setText(newWeather.getmHumidity().toString() + "%");
+        pressureTextView.setText(newWeather.getMain().getPressure().toString());
+        windTextView.setText(newWeather.getWind().getSpeed().toString());
+        weatherTypeTextView.setText(newWeather.getWeatherList().get(0).getMain());
+        minMaxTempTextView.setText(newWeather.getMain().getTempMin() + "º / " + newWeather.getMain().getTempMax() + "º");
+        feelsLikeTextView.setText("Feels like " + newWeather.getMain().getFeelsLike() + "º");
+        humidityTextView.setText(newWeather.getMain().getHumidity().toString() + "%");
 
-        Picasso.with(getApplicationContext()).load("https://openweathermap.org/img/wn/" + newWeather.getmWeatherType().getIcon() +  "@2x.png").into(weatherIcon);
+        Picasso.with(getApplicationContext()).load("https://openweathermap.org/img/wn/" + newWeather.getWeatherList().get(0).getIcon() +  "@2x.png").into(weatherIcon);
 
     }
 

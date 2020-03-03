@@ -16,10 +16,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.view.WindowManager;
-import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -28,24 +25,18 @@ import androidx.appcompat.widget.Toolbar;
 
 import com.example.sunshine.adapters.WeatherForecastAdapter;
 import com.example.sunshine.data.WeatherDbHelper;
-import com.example.sunshine.models.TypeWeather;
+import com.example.sunshine.models.ForecastResult;
 import com.example.sunshine.models.Weather;
+import com.example.sunshine.models.WeatherResult;
 import com.example.sunshine.network.GetDataService;
 import com.example.sunshine.network.RetrofitClientInstance;
 import com.squareup.picasso.Picasso;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.IOException;
-import java.io.InputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
-import okhttp3.ResponseBody;
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 import retrofit2.Call;
@@ -56,7 +47,7 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String API_KEY = "9d7443ba0f8ff7df7afafd12f4006dca";
 
-    Weather currentWeather;
+    WeatherResult currentWeather;
     ArrayList<Weather> currentWeatherArrayList;
     ArrayList<Weather> weatherArrayList = new ArrayList<>();
     ArrayList<Weather> tomorrowWeatherArrayList = new ArrayList<>();
@@ -74,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
     TextView next5DaysBox;
     TextView windTextView;
     TextView pressureTextView;
+    WeatherForecastAdapter adapter;
     Calendar cal = Calendar.getInstance();
 
     private final int REQUEST_LOCATION_PERMISSION = 1;
@@ -101,6 +93,11 @@ public class MainActivity extends AppCompatActivity {
         windTextView =  findViewById(R.id.windTxt);
         Toolbar toolbar = findViewById(R.id.tool_bar);
 
+        adapter = new WeatherForecastAdapter(getApplicationContext());
+        weatherHourRecycler.setLayoutManager(new LinearLayoutManager(getApplicationContext(), RecyclerView.HORIZONTAL, false));
+        weatherHourRecycler.setAdapter(adapter);
+
+
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
 
         // Setting toolbar as the ActionBar with setSupportActionBar() call
@@ -127,9 +124,8 @@ public class MainActivity extends AppCompatActivity {
 
         todayBox.setOnClickListener(v -> {
             updateWeatherDay(currentWeather);
-            WeatherForecastAdapter adapter = new WeatherForecastAdapter(currentWeatherArrayList, getApplicationContext());
-            weatherHourRecycler.setLayoutManager(new LinearLayoutManager(getApplicationContext(), RecyclerView.HORIZONTAL, false));
-            weatherHourRecycler.setAdapter(adapter);
+            adapter.setWeatherList(currentWeatherArrayList);
+            adapter.notifyDataSetChanged();
 
         });
 
@@ -137,9 +133,8 @@ public class MainActivity extends AppCompatActivity {
 
             if(tomorrowWeatherArrayList.size() > 0){
                 updateWeatherDay(tomorrowWeatherArrayList.get(4));
-                WeatherForecastAdapter adapter = new WeatherForecastAdapter(tomorrowWeatherArrayList, getApplicationContext());
-                weatherHourRecycler.setLayoutManager(new LinearLayoutManager(getApplicationContext(), RecyclerView.HORIZONTAL, false));
-                weatherHourRecycler.setAdapter(adapter);
+                adapter.setWeatherList(tomorrowWeatherArrayList);
+                adapter.notifyDataSetChanged();
             }
 
         });
@@ -151,49 +146,24 @@ public class MainActivity extends AppCompatActivity {
         });
 
         GetDataService retrofitInterface = RetrofitClientInstance.getRetrofitInstance().create(GetDataService.class);
-        Call<ResponseBody> callForecast = retrofitInterface.getForecast("Porto", API_KEY, "Metric");
 
+        WeatherDbHelper db = new WeatherDbHelper(getApplicationContext());
+        List<WeatherResult> weatherList = db.getAll();
 
-        Call<ResponseBody> call = retrofitInterface.getWeather("Porto", API_KEY, "Metric");
+        Log.d("size1", String.valueOf(weatherList.size()));
 
-        call.enqueue(new Callback<ResponseBody>() {
-            @Override
-            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                try{
-                    String stringResponse = response.body().string();
-                    Weather weather = serializeJson(stringResponse);
-                    currentWeather = weather;
+        if(weatherList.size() > 0){
 
-                    WeatherDbHelper db = new WeatherDbHelper(getApplicationContext());
-                    db.checkWeatherType(weather.getmWeatherType());
-                    db.addWeather(weather);
+            WeatherResult weather = weatherList.get(weatherList.size() - 1);
 
-                    updateWeatherDay(currentWeather);
+            /*
+            currentWeatherArrayList = (ArrayList<Weather>) db.getAll2();
+            adapter.setWeatherList(currentWeatherArrayList);
+            adapter.notifyDataSetChanged();
+*/
+            updateWeatherDay(weather);
 
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-            }
-
-            @Override
-            public void onFailure(Call<ResponseBody> call, Throwable t) {
-                Toast.makeText(MainActivity.this, t.getMessage(), Toast.LENGTH_SHORT).show();
-
-                WeatherDbHelper db = new WeatherDbHelper(getApplicationContext());
-                List<Weather> weatherList = db.getAll("", "2147714");
-
-                Weather weather = weatherList.get(0);
-
-                String mainTemp = String.format("%.0f", weather.getmMainTemp());
-                tempTextView.setText(mainTemp + "º");
-                weatherTypeTextView.setText(weather.getmWeatherType().getMain());
-                minMaxTempTextView.setText(weather.getmMinTemp() + "º / " + weather.getmMaxTemp() + "º");
-                feelsLikeTextView.setText("Feels like " + weather.getmFeelsLikeTemp()+ "º");
-
-            }
-        });
-
+        }
     }
 
     @Override
@@ -216,17 +186,14 @@ public class MainActivity extends AppCompatActivity {
             String cityText = citySearch.getText().toString();
 
             GetDataService retrofitInterface = RetrofitClientInstance.getRetrofitInstance().create(GetDataService.class);
-            Call<ResponseBody> call = retrofitInterface.getWeather(cityText, API_KEY, "Metric");
 
+            Call<WeatherResult> call = retrofitInterface.getWeather(cityText, API_KEY, "Metric");
             getWeatherByCity(call);
-            Call<ResponseBody> callForecast = retrofitInterface.getForecast(cityText, API_KEY, "Metric");
 
-            WeatherForecastAdapter adapter = new WeatherForecastAdapter(getWeatherForecast(callForecast), getApplicationContext());
-            weatherHourRecycler.setLayoutManager(new LinearLayoutManager(getApplicationContext(), RecyclerView.HORIZONTAL, false));
-            weatherHourRecycler.setAdapter(adapter);
+            Call<ForecastResult> callForecast = retrofitInterface.getForecast(cityText, API_KEY, "Metric");
 
-
-
+            adapter.setWeatherList(getWeatherForecast(callForecast));
+            adapter.notifyDataSetChanged();
 
             return true;
         }
@@ -234,42 +201,36 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public void getWeatherByCity(Call<ResponseBody> call){
+    public void getWeatherByCity(Call<WeatherResult> call){
 
-        call.enqueue(new Callback<ResponseBody>() {
+        call.enqueue(new Callback<WeatherResult>() {
             @Override
-            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                try{
-                    String stringResponse = response.body().string();
-                    Weather weather = serializeJson(stringResponse);
-                    currentWeather = weather;
+            public void onResponse(Call<WeatherResult> call, Response<WeatherResult> response) {
 
-                    WeatherDbHelper db = new WeatherDbHelper(getApplicationContext());
-                    db.checkWeatherType(weather.getmWeatherType());
-                    db.addWeather(weather);
+                currentWeather = response.body();
+                WeatherDbHelper weatherDbHelper = new WeatherDbHelper(getApplicationContext());
 
-                    updateWeatherDay(currentWeather);
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                weatherDbHelper.checkWeatherType(response.body().getWeatherList().get(0));
+                weatherDbHelper.addWeather(currentWeather);
+                updateWeatherDay(currentWeather);
 
             }
 
             @Override
-            public void onFailure(Call<ResponseBody> call, Throwable t) {
-                Toast.makeText(MainActivity.this, t.getMessage(), Toast.LENGTH_SHORT).show();
+            public void onFailure(Call<WeatherResult> call, Throwable t) {
+                Toast.makeText(MainActivity.this, "Check your Internet connection.", Toast.LENGTH_SHORT).show();
 
                 WeatherDbHelper db = new WeatherDbHelper(getApplicationContext());
-                List<Weather> weatherList = db.getAll("", "2147714");
+                List<WeatherResult> weatherList = db.getAll();
 
-                Weather weather = weatherList.get(0);
+                WeatherResult weather = weatherList.get(0);
 
-                String mainTemp = String.format("%.0f", weather.getmMainTemp());
+                String mainTemp = String.format("%.0f", weather.getMain().getTemp());
                 tempTextView.setText(mainTemp + "º");
-                weatherTypeTextView.setText(weather.getmWeatherType().getMain());
-                minMaxTempTextView.setText(weather.getmMinTemp() + "º / " + weather.getmMaxTemp() + "º");
-                feelsLikeTextView.setText("Feels like " + weather.getmFeelsLikeTemp()+ "º");
+               // weatherTypeTextView.setText(weather.ge().getMain());
+                minMaxTempTextView.setText(weather.getMain().getTempMin() + "º / " + weather.getMain().getTempMax() + "º");
+                feelsLikeTextView.setText("Feels like " + weather.getMain().getFeelsLike() + "º");
+
 
             }
         });
@@ -295,122 +256,58 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public Weather serializeJson(String response){
-
-        Weather weather = new Weather();
-        TypeWeather typeWeather = new TypeWeather();
-
-        try {
-
-            JSONObject jsonObject = new JSONObject(response);
-            JSONObject mainObj = jsonObject.getJSONObject("main");
-
-
-            JSONArray weatherArray = jsonObject.getJSONArray("weather");
-            JSONObject sysObj = jsonObject.getJSONObject("sys");
-            JSONObject windObj = jsonObject.getJSONObject("wind");
-            JSONObject jsonObject1 = weatherArray.getJSONObject(0);
-
-            Integer typeId = jsonObject1.getInt("id");
-            String main = jsonObject1.getString("main");
-            String description = jsonObject1.getString("description");
-            String icon = jsonObject1.getString("icon");
-
-            typeWeather.setId(typeId);
-            typeWeather.setMain(main);
-            typeWeather.setDescription(description);
-            typeWeather.setIcon(icon);
-            weather.setmWeatherType(typeWeather);
-
-            String sunriseHour = sysObj.getString("sunrise");
-            String sunsetHour = sysObj.getString("sunset");
-            Double windSpeed = windObj.getDouble("speed");
-            Integer cityId = jsonObject.getInt("id");
-            String date = jsonObject.getString("dt");
-            Double mainTemp = mainObj.getDouble("temp");
-            Double minTemp = mainObj.getDouble("temp_min");
-            Double maxTemp = mainObj.getDouble("temp_max");
-            Double pressure = mainObj.getDouble("pressure");
-            Double humidity = mainObj.getDouble("humidity");
-            Double feelLikeTemp = mainObj.getDouble("feels_like");
-
-            weather.setmCityId(cityId);
-            weather.setmMainTemp(mainTemp);
-            weather.setmMinTemp(minTemp);
-            weather.setmMaxTemp(maxTemp);
-            weather.setmPressure(pressure);
-            weather.setmHumidity(humidity);
-            weather.setmFeelsLikeTemp(feelLikeTemp);
-            weather.setmSunrise(sunriseHour);
-            weather.setmSunset(sunsetHour);
-            weather.setmDate(date);
-            weather.setmSpeedWind(windSpeed);
-
-
-        } catch (JSONException e){
-            e.printStackTrace();
-        }
-
-        return weather;
-
-    }
-
-    public ArrayList<Weather> getWeatherForecast(Call<ResponseBody> call){
+    public ArrayList<Weather> getWeatherForecast(Call<ForecastResult> call){
 
         weatherArrayList.clear();
         tomorrowWeatherArrayList.clear();
 
         ArrayList<Weather> listWeather = new ArrayList<>();
 
-        call.enqueue(new Callback<ResponseBody>() {
+        call.enqueue(new Callback<ForecastResult>() {
             @Override
-            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                Log.d("Response", call.request().url().toString());
+            public void onResponse(Call<ForecastResult> call, Response<ForecastResult> response) {
 
-                try {
-                    String stringResponse = response.body().string();
 
-                    JSONObject jsonObject = new JSONObject(stringResponse);
+                if(response.raw().code() != 404){
 
-                    JSONArray jsonArray = jsonObject.getJSONArray("list");
+                    for(int i = 0; i < response.body().getListWeather().size(); i++) {
 
-                    for(int i = 0; i < jsonArray.length(); i++){
+                        Weather weather = response.body().getListWeather().get(i);
+                        WeatherDbHelper weatherDbHelper = new WeatherDbHelper(getApplicationContext());
+                        weatherDbHelper.addWeather2(weather);
 
-                        JSONObject jsonObject1 = jsonArray.getJSONObject(i);
-                        Weather weather = serializeJsonForecast(jsonObject1);
+                        try {
+                            if (isDateSame(weather.getDateCalendar(), cal)) {
+                                listWeather.add(weather);
+                            } else {
+                                weatherArrayList.add(weather);
+                            }
 
-                       // Log.d("Values", String.valueOf(weather.getDateCalendar().get(Calendar.HOUR_OF_DAY)) + "/" + String.valueOf(weather.getDateCalendar().get(Calendar.MINUTE)));
-                        if(isDateSame(weather.getDateCalendar(), cal)){
-                            listWeather.add(weather);
-                        } else {
-                            weatherArrayList.add(weather);
-                        }
+                            cal.add(Calendar.DATE, +1);
+                            if (isDateSame(weather.getDateCalendar(), cal)) {
+                                tomorrowWeatherArrayList.add(weather);
+                            }
 
-                        cal.add(Calendar.DATE, +1);
-                        if(isDateSame(weather.getDateCalendar(), cal)){
-                            tomorrowWeatherArrayList.add(weather);
+                        } catch (ParseException e) {
+                            e.printStackTrace();
                         }
 
                         cal.add(Calendar.DATE, -1);
 
                     }
 
+                    }
+
+
                     currentWeatherArrayList = listWeather;
 
-                    WeatherForecastAdapter adapter = new WeatherForecastAdapter(currentWeatherArrayList, getApplicationContext());
-                    weatherHourRecycler.setLayoutManager(new LinearLayoutManager(getApplicationContext(), RecyclerView.HORIZONTAL, false));
-                    weatherHourRecycler.setAdapter(adapter);
+                    adapter.setWeatherList(currentWeatherArrayList);
+                    adapter.notifyDataSetChanged();
 
-                } catch (IOException e){
-                    e.printStackTrace();
-                } catch (JSONException json){
-                    Log.d("JsonException", json.getMessage());
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
+
             }
             @Override
-            public void onFailure(Call<ResponseBody> call, Throwable t) {
+            public void onFailure(Call<ForecastResult> call, Throwable t) {
                 Log.d("Error", t.getMessage());
             }
         });
@@ -419,84 +316,41 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-
-    public Weather serializeJsonForecast(JSONObject jsonObject){
-
-        Weather weather = new Weather();
-        TypeWeather typeWeather = new TypeWeather();
-
-        try {
-
-            JSONObject jsonObjectMain = jsonObject.getJSONObject("main");
-
-            String date = jsonObject.getString("dt_txt");
-
-            Double mainTemp = jsonObjectMain.getDouble("temp");
-            Double feelLikeTemp = jsonObjectMain.getDouble("feels_like");
-            Double maxTemp = jsonObjectMain.getDouble("temp_max");
-            Double minTemp = jsonObjectMain.getDouble("temp_min");
-            Double humidity = jsonObjectMain.getDouble("humidity");
-            Double pressure = jsonObjectMain.getDouble("pressure");
-
-            JSONObject windObject = jsonObject.getJSONObject("wind");
-            Double windSpeed = windObject.getDouble("speed");
-
-            JSONArray weatherArray = jsonObject.getJSONArray("weather");
-            JSONObject jsonObject1 = weatherArray.getJSONObject(0);
-
-            Integer typeId = jsonObject1.getInt("id");
-            String main = jsonObject1.getString("main");
-            String description = jsonObject1.getString("description");
-            String icon = jsonObject1.getString("icon");
-
-            typeWeather.setId(typeId);
-            typeWeather.setMain(main);
-            typeWeather.setDescription(description);
-            typeWeather.setIcon(icon);
-            weather.setmWeatherType(typeWeather);
-
-            weather.setmMainTemp(mainTemp);
-            weather.setmMinTemp(minTemp);
-            weather.setmMaxTemp(maxTemp);
-            weather.setmPressure(pressure);
-            weather.setmHumidity(humidity);
-            weather.setmFeelsLikeTemp(feelLikeTemp);
-            weather.setmDate(date);
-            weather.setmSpeedWind(windSpeed);
-
-
-        } catch (JSONException e){
-            e.printStackTrace();
-        }
-
-        return weather;
-
-    }
-
     private boolean isDateSame(Calendar c1, Calendar c2) {
         return (c1.get(Calendar.DAY_OF_MONTH) == c2.get(Calendar.DAY_OF_MONTH));
     }
 
-    private void updateWeatherDay(Weather newWeather){
+    private void updateWeatherDay(WeatherResult newWeather){
 
-        String mainTemp = String.format("%.0f", newWeather.getmMainTemp());
+        String mainTemp = String.format("%.0f", newWeather.getMain().getTemp());
 
         tempTextView.setText(mainTemp + "º");
-        pressureTextView.setText(newWeather.getmPressure().toString());
-        windTextView.setText(newWeather.getmSpeedWind().toString());
-        weatherTypeTextView.setText(newWeather.getmWeatherType().getMain());
-        minMaxTempTextView.setText(newWeather.getmMinTemp() + "º / " + newWeather.getmMaxTemp() + "º");
-        feelsLikeTextView.setText("Feels like " + newWeather.getmFeelsLikeTemp() + "º");
-        if(!newWeather.checkSun()){
-            sunriseTextView.setText(currentWeather.getmSunrise());
-            sunsetTextView.setText(currentWeather.getmSunset());
-        } else {
-            sunriseTextView.setText(newWeather.getmSunrise());
-            sunsetTextView.setText(newWeather.getmSunset());
-        }
-        humidityTextView.setText(newWeather.getmHumidity().toString() + "%");
+        pressureTextView.setText(newWeather.getMain().getPressure().toString());
+        //windTextView.setText(newWeather.getWind().getSpeed().toString());
+        weatherTypeTextView.setText(newWeather.getWeatherList().get(0).getMain());
+        minMaxTempTextView.setText(newWeather.getMain().getTempMin() + "º / " + newWeather.getMain().getTempMax() + "º");
+        feelsLikeTextView.setText("Feels like " + newWeather.getMain().getFeelsLike() + "º");
+        sunriseTextView.setText(newWeather.getCity().getmSunrise());
+        sunsetTextView.setText(newWeather.getCity().getmSunset());
+        humidityTextView.setText(newWeather.getMain().getHumidity().toString() + "%");
 
-        Picasso.with(getApplicationContext()).load("https://openweathermap.org/img/wn/" + newWeather.getmWeatherType().getIcon() +  "@2x.png").into(weatherIcon);
+        Picasso.with(getApplicationContext()).load("https://openweathermap.org/img/wn/" + newWeather.getWeatherList().get(0).getIcon() +  "@2x.png").into(weatherIcon);
+
+    }
+
+    private void updateWeatherDay(Weather newWeather){
+
+        String mainTemp = String.format("%.0f", newWeather.getMain().getTemp());
+
+        tempTextView.setText(mainTemp + "º");
+        pressureTextView.setText(newWeather.getMain().getPressure().toString());
+        windTextView.setText(newWeather.getWind().getSpeed().toString());
+        weatherTypeTextView.setText(newWeather.getWeatherList().get(0).getMain());
+        minMaxTempTextView.setText(newWeather.getMain().getTempMin() + "º / " + newWeather.getMain().getTempMax() + "º");
+        feelsLikeTextView.setText("Feels like " + newWeather.getMain().getFeelsLike() + "º");
+        humidityTextView.setText(newWeather.getMain().getHumidity().toString() + "%");
+
+        Picasso.with(getApplicationContext()).load("https://openweathermap.org/img/wn/" + newWeather.getWeatherList().get(0).getIcon() +  "@2x.png").into(weatherIcon);
 
     }
 
@@ -511,34 +365,27 @@ public class MainActivity extends AppCompatActivity {
              double latitude = location.getLatitude();
 
             GetDataService retrofitInterface = RetrofitClientInstance.getRetrofitInstance().create(GetDataService.class);
-            Call<ResponseBody> call = retrofitInterface.getWeatherCoord(String.valueOf(latitude), String.valueOf(longitude), API_KEY, "Metric");
+            Call<WeatherResult> call = retrofitInterface.getWeatherCoord(String.valueOf(latitude), String.valueOf(longitude), API_KEY, "Metric");
 
-            call.enqueue(new Callback<ResponseBody>() {
+            call.enqueue(new Callback<WeatherResult>() {
                 @Override
-                public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                    try{
-                        String stringResponse = response.body().string();
-                        Weather weather = serializeJson(stringResponse);
-                        currentWeather = weather;
+                public void onResponse(Call<WeatherResult> call, Response<WeatherResult> response) {
 
-                        WeatherDbHelper db = new WeatherDbHelper(getApplicationContext());
-                        db.checkWeatherType(weather.getmWeatherType());
-                        db.addWeather(weather);
+                        currentWeather = response.body();
 
+                        WeatherDbHelper weatherDbHelper = new WeatherDbHelper(getApplicationContext());
+
+                        weatherDbHelper.checkWeatherType(response.body().getWeatherList().get(0));
+                        weatherDbHelper.addWeather(currentWeather);
                         updateWeatherDay(currentWeather);
 
-                        GetDataService retrofitInterface = RetrofitClientInstance.getRetrofitInstance().create(GetDataService.class);
-                        Call<ResponseBody> callForecast = retrofitInterface.getForecastCoord(String.valueOf(latitude), String.valueOf(longitude), API_KEY, "Metric");
-
+                        Call<ForecastResult> callForecast = retrofitInterface.getForecastCoord(String.valueOf(latitude), String.valueOf(longitude), API_KEY, "Metric");
                         getWeatherForecast(callForecast);
 
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
                 }
 
                 @Override
-                public void onFailure(Call<ResponseBody> call, Throwable t) {
+                public void onFailure(Call<WeatherResult> call, Throwable t) {
 
                 }
             });

@@ -28,9 +28,12 @@ public class WeatherForecastAdapter extends RecyclerView.Adapter<WeatherForecast
     private Context mContext;
 
     // Counstructor for the Class
-    public WeatherForecastAdapter(ArrayList<Weather> weatherList, Context context) {
-        this.weatherList = weatherList;
+    public WeatherForecastAdapter(Context context) {
         this.mContext = context;
+    }
+
+    public void setWeatherList(ArrayList<Weather> weatherList){
+        this.weatherList = weatherList;
     }
 
     // This method creates views for the RecyclerView by inflating the layout
@@ -54,7 +57,7 @@ public class WeatherForecastAdapter extends RecyclerView.Adapter<WeatherForecast
     public void onBindViewHolder(@NonNull WeatherHolder holder, final int position) {
         final Weather weather = weatherList.get(position);
 
-        String mainTemp = String.format("%.0f", weather.getmMainTemp()) + "º";
+        String mainTemp = String.format("%.0f", weather.getMain().getTemp()) + "º";
 
         holder.txtTemp.setText(mainTemp);
         try {
@@ -64,7 +67,7 @@ public class WeatherForecastAdapter extends RecyclerView.Adapter<WeatherForecast
             e.printStackTrace();
         }
 
-        Picasso.with(mContext).load("https://openweathermap.org/img/wn/" + weather.getmWeatherType().getIcon() +  "@2x.png").into(holder.iconWeather);
+        Picasso.with(mContext).load("https://openweathermap.org/img/wn/" + weather.getWeatherList().get(0).getIcon() +  "@2x.png").into(holder.iconWeather);
 
     }
 
