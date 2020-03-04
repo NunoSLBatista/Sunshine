@@ -2,49 +2,56 @@ package com.example.sunshine;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
-import android.widget.Toast;
+import com.example.sunshine.adapters.CityAdapter;
+import com.example.sunshine.data.WeatherDbHelper;
+import com.example.sunshine.models.City;
 
-import com.example.sunshine.models.WeatherResult;
-import com.example.sunshine.network.GetDataService;
-import com.example.sunshine.network.RetrofitClientInstance;
+import java.util.ArrayList;
 
-import okhttp3.ResponseBody;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+public class TestActivity extends AppCompatActivity implements CityAdapter.ClickListener {
 
-import static com.example.sunshine.MainActivity.API_KEY;
+    ArrayList<City> citiesArray;
+    RecyclerView citiesRecyclerView;
+    CityAdapter cityAdapter;
+    public static final String CITY_DATA = "CITY_DATA";
+    public static final String CITY_DATA2 = "CITY_DATA2";
 
-public class TestActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_test);
 
-        GetDataService retrofitInterface = RetrofitClientInstance.getRetrofitInstance().create(GetDataService.class);
-        Call<WeatherResult> call = retrofitInterface.getWeather("Porto", API_KEY, "Metric");
+        citiesRecyclerView = findViewById(R.id.citiesRecylerView);
 
-        call.enqueue(new Callback<WeatherResult>() {
-            @Override
-            public void onResponse(@NonNull Call<WeatherResult> call, @NonNull Response<WeatherResult> response) {
+        WeatherDbHelper weatherDbHelper = new WeatherDbHelper(getApplicationContext());
+        citiesArray = weatherDbHelper.getAllCities();
 
-                if(response.raw().code() != 404){
+        cityAdapter = new CityAdapter(citiesArray, getApplicationContext(), this);
+        citiesRecyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext(), RecyclerView.VERTICAL, false));
+        citiesRecyclerView.setAdapter(cityAdapter);
 
-                    Log.d("Temperature", response.body().getWeatherList().get(0).getDescription());
+    }
 
-                }
+    @Override
+    public void onDayClick(Context context, City city) {
+        final Intent data = new Intent();
+        data.putExtra(CITY_DATA, city.getName());
+        data.putExtra(CITY_DATA2, city.getId());
+        setResult(Activity.RESULT_OK, data);
+        this.finish();
+    }
 
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<WeatherResult> call, @NonNull Throwable t) {
-                Log.d("Error Message", t.getMessage());
-            }
-        });
-
+    @Override
+    public void onBackPressed() {
+        setResult(Activity.RESULT_CANCELED);
+        super.onBackPressed();
     }
 }

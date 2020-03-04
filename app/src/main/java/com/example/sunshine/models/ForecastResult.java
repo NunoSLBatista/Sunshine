@@ -13,6 +13,9 @@ public class ForecastResult implements Serializable {
     @SerializedName("list")
     private ArrayList<Weather> listWeather;
 
+    @SerializedName("city")
+    private City city;
+
     public String getCod() {
         return cod;
     }
@@ -27,5 +30,13 @@ public class ForecastResult implements Serializable {
 
     public void setListWeather(ArrayList<Weather> listWeather) {
         this.listWeather = listWeather;
+    }
+
+    public City getCity() {
+        return city;
+    }
+
+    public void setCity(City city) {
+        this.city = city;
     }
 }

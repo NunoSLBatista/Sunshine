@@ -1,5 +1,6 @@
 <LinearLayout xmlns:sothree="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#ffffff"
@@ -10,6 +11,18 @@
         <include
             android:id="@+id/tool_bar"
             layout="@layout/tool_bar" />
+
+    <TextView
+        android:id="@+id/cityTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Porto, Portugal"
+        android:textColor="@color/darkGrey"
+        android:fontFamily="@font/montserrat"
+        android:textSize="21sp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginTop="10dp" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -24,7 +37,6 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="0.7"
                 android:fontFamily="@font/montserrat_bold"
-                android:text="19º"
                 android:textColor="@color/softDark"
                 android:textSize="80sp" />
 
@@ -48,7 +60,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="@font/montserrat"
-            android:text="Sunny day"
             android:textColor="@color/softDark"
             android:textSize="16sp" />
 
@@ -56,21 +67,19 @@
             android:id="@+id/minMaxTemp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="20dp"
+            android:layout_marginStart="20dp"
             android:fontFamily="@font/montserrat"
-            android:text="20º / 26º"
             android:textColor="@color/darkGrey"
             android:textSize="15sp" />
 
         <TextView
             android:id="@+id/feelLikeTemp"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_gravity="end"
             android:layout_weight="0.7"
             android:fontFamily="@font/montserrat"
             android:gravity="end"
-            android:text="Feels like 25º"
             android:textColor="@color/darkGrey"
             android:textSize="16sp" />
 
@@ -81,6 +90,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
+        android:baselineAligned="false"
         android:paddingEnd="20dp"
         android:paddingStart="20dp"
         android:layout_marginTop="40dp">
@@ -89,6 +99,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="0.33333"
+            android:baselineAligned="false"
             android:orientation="horizontal">
 
             <ImageView
@@ -98,19 +109,20 @@
 
             <TextView
                 android:id="@+id/sunriseTxt"
-                android:layout_width="wrap_content"
+                android:layout_width="50dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
-                android:layout_marginLeft="10dp"
-                android:text="9:40" />
+                android:layout_marginStart="10dp" />
 
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:baselineAligned="false"
             android:layout_weight="0.33333"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            tools:ignore="UseCompoundDrawables">
 
             <ImageView
                 android:layout_width="30dp"
@@ -119,11 +131,10 @@
 
             <TextView
                 android:id="@+id/sunsetTxt"
-                android:layout_width="wrap_content"
+                android:layout_width="50dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
-                android:layout_marginLeft="10dp"
-                android:text="9:40" />
+                android:layout_marginStart="10dp" />
 
         </LinearLayout>
 
@@ -131,6 +142,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="0.33333"
+            android:baselineAligned="false"
             android:orientation="horizontal">
 
             <ImageView
@@ -139,12 +151,11 @@
                 sothree:srcCompat="@drawable/humidity_icon" />
 
             <TextView
-                android:layout_width="wrap_content"
+                android:layout_width="50dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
                 android:layout_marginLeft="15dp"
-                android:gravity="center_vertical"
-                android:text="9:40" />
+                android:gravity="center_vertical" />
 
         </LinearLayout>
 
@@ -171,11 +182,10 @@
 
             <TextView
                 android:id="@+id/windTxt"
-                android:layout_width="wrap_content"
+                android:layout_width="50dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
-                android:layout_marginLeft="10dp"
-                android:text="9:40" />
+                android:layout_marginLeft="10dp" />
 
         </LinearLayout>
 
@@ -192,11 +202,10 @@
 
             <TextView
                 android:id="@+id/pressureText"
-                android:layout_width="wrap_content"
+                android:layout_width="50dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
-                android:layout_marginLeft="10dp"
-                android:text="9:40" />
+                android:layout_marginLeft="10dp" />
 
         </LinearLayout>
 
@@ -213,12 +222,11 @@
 
             <TextView
                 android:id="@+id/humidityTextView"
-                android:layout_width="wrap_content"
+                android:layout_width="50dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
                 android:layout_marginLeft="15dp"
-                android:gravity="center_vertical"
-                android:text="9:40" />
+                android:gravity="center_vertical" />
 
         </LinearLayout>
 

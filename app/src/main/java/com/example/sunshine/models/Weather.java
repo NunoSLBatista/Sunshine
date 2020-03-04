@@ -26,6 +26,8 @@ public class Weather implements Serializable {
     @SerializedName("dt_txt")
     private String date;
 
+    private Integer cityId;
+
 
     public Main getMain() {
         return main;
@@ -68,4 +70,11 @@ public class Weather implements Serializable {
         return cal;
     }
 
+    public Integer getCityId() {
+        return cityId;
+    }
+
+    public void setCityId(Integer cityId) {
+        this.cityId = cityId;
+    }
 }

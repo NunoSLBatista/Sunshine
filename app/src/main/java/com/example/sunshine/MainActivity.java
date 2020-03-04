@@ -1,21 +1,27 @@
 package com.example.sunshine;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -25,6 +31,7 @@ import androidx.appcompat.widget.Toolbar;
 
 import com.example.sunshine.adapters.WeatherForecastAdapter;
 import com.example.sunshine.data.WeatherDbHelper;
+import com.example.sunshine.models.City;
 import com.example.sunshine.models.ForecastResult;
 import com.example.sunshine.models.Weather;
 import com.example.sunshine.models.WeatherResult;
@@ -36,6 +43,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
@@ -48,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String API_KEY = "9d7443ba0f8ff7df7afafd12f4006dca";
 
     WeatherResult currentWeather;
-    ArrayList<Weather> currentWeatherArrayList;
+    ArrayList<Weather> currentWeatherArrayList = new ArrayList<>();
     ArrayList<Weather> weatherArrayList = new ArrayList<>();
     ArrayList<Weather> tomorrowWeatherArrayList = new ArrayList<>();
     TextView weatherTypeTextView;
@@ -65,9 +73,9 @@ public class MainActivity extends AppCompatActivity {
     TextView next5DaysBox;
     TextView windTextView;
     TextView pressureTextView;
+    TextView cityTextView;
     WeatherForecastAdapter adapter;
     Calendar cal = Calendar.getInstance();
-
     private final int REQUEST_LOCATION_PERMISSION = 1;
     EditText citySearch;
 
@@ -90,8 +98,10 @@ public class MainActivity extends AppCompatActivity {
         tomorrowBox =  findViewById(R.id.tommorowBox);
         next5DaysBox =  findViewById(R.id.next5Days);
         pressureTextView =  findViewById(R.id.pressureText);
+        cityTextView = findViewById(R.id.cityTextView);
         windTextView =  findViewById(R.id.windTxt);
         Toolbar toolbar = findViewById(R.id.tool_bar);
+
 
         adapter = new WeatherForecastAdapter(getApplicationContext());
         weatherHourRecycler.setLayoutManager(new LinearLayoutManager(getApplicationContext(), RecyclerView.HORIZONTAL, false));
@@ -114,13 +124,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
         LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-
         assert lm != null;
-        Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
 
        lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 1000, locationListener);
-
-
 
         todayBox.setOnClickListener(v -> {
             updateWeatherDay(currentWeather);
@@ -145,42 +152,62 @@ public class MainActivity extends AppCompatActivity {
              startActivity(forecastActivity);
         });
 
-        GetDataService retrofitInterface = RetrofitClientInstance.getRetrofitInstance().create(GetDataService.class);
+        cityTextView.setOnClickListener(v -> {
+            Intent cityActivity = new Intent(getApplicationContext(), TestActivity.class);
+            startActivityForResult(cityActivity, 2000);
+        });
 
         WeatherDbHelper db = new WeatherDbHelper(getApplicationContext());
         List<WeatherResult> weatherList = db.getAll();
 
-        Log.d("size1", String.valueOf(weatherList.size()));
-
         if(weatherList.size() > 0){
 
             WeatherResult weather = weatherList.get(weatherList.size() - 1);
+            updateWeatherDay(weather);
 
-            /*
-            currentWeatherArrayList = (ArrayList<Weather>) db.getAll2();
+            currentWeather = weather;
+            ArrayList<Weather> tempArrayList = (ArrayList<Weather>) db.getAll2(weather);
+
+            try {
+               cal = currentWeather.getDateCalendar();
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+
+            for(int i = 0; i < tempArrayList.size(); i++){
+                try {
+                    if (isDateSame(tempArrayList.get(i).getDateCalendar(), cal)) {
+                        currentWeatherArrayList.add(tempArrayList.get(i));
+                    } else {
+                        weatherArrayList.add(tempArrayList.get(i));
+                    }
+
+                    cal.add(Calendar.DATE, +1);
+                    if (isDateSame(tempArrayList.get(i).getDateCalendar(), cal)) {
+                        tomorrowWeatherArrayList.add(tempArrayList.get(i));
+                    }
+                    cal.add(Calendar.DATE, -1);
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+            }
+
             adapter.setWeatherList(currentWeatherArrayList);
             adapter.notifyDataSetChanged();
-*/
-            updateWeatherDay(weather);
 
         }
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_search) {
 
             String cityText = citySearch.getText().toString();
@@ -192,8 +219,13 @@ public class MainActivity extends AppCompatActivity {
 
             Call<ForecastResult> callForecast = retrofitInterface.getForecast(cityText, API_KEY, "Metric");
 
-            adapter.setWeatherList(getWeatherForecast(callForecast));
-            adapter.notifyDataSetChanged();
+            ArrayList<Weather> weatherForecast = getWeatherForecast(callForecast);
+            if(weatherForecast != null && weatherForecast.size() > 0){
+                adapter.setWeatherList(weatherForecast);
+                adapter.notifyDataSetChanged();
+            } else {
+
+            }
 
             return true;
         }
@@ -205,76 +237,78 @@ public class MainActivity extends AppCompatActivity {
 
         call.enqueue(new Callback<WeatherResult>() {
             @Override
-            public void onResponse(Call<WeatherResult> call, Response<WeatherResult> response) {
+            public void onResponse(@NonNull Call<WeatherResult> call, @NonNull Response<WeatherResult> response) {
 
-                currentWeather = response.body();
-                WeatherDbHelper weatherDbHelper = new WeatherDbHelper(getApplicationContext());
+                if(response.raw().code() == 200){
+                    currentWeather = response.body();
+                    WeatherDbHelper weatherDbHelper = new WeatherDbHelper(getApplicationContext());
 
-                weatherDbHelper.checkWeatherType(response.body().getWeatherList().get(0));
-                weatherDbHelper.addWeather(currentWeather);
-                updateWeatherDay(currentWeather);
+                    weatherDbHelper.checkWeatherType(response.body().getWeatherList().get(0));
+                    try {
+                        if(!weatherDbHelper.checkDates(currentWeather)){
+                            weatherDbHelper.addWeather(currentWeather);
+                            weatherDbHelper.checkCity(currentWeather);
+                        }
+                    } catch (ParseException e) {
+                        e.printStackTrace();
+                    }
+                    updateWeatherDay(currentWeather);
+                } else {
+                    Toast.makeText(getApplicationContext(), "Nome da cidade é inválido.", Toast.LENGTH_LONG).show();
+                }
 
             }
 
             @Override
-            public void onFailure(Call<WeatherResult> call, Throwable t) {
-                Toast.makeText(MainActivity.this, "Check your Internet connection.", Toast.LENGTH_SHORT).show();
+            public void onFailure(@NonNull Call<WeatherResult> call, @NonNull Throwable t) {
 
-                WeatherDbHelper db = new WeatherDbHelper(getApplicationContext());
-                List<WeatherResult> weatherList = db.getAll();
+                if(t.getMessage() != null && t.getMessage().contains("No address associated with hostname")){
 
-                WeatherResult weather = weatherList.get(0);
+                    WeatherDbHelper db = new WeatherDbHelper(getApplicationContext());
+                    List<WeatherResult> weatherList = db.getAll();
+                    WeatherResult weather = weatherList.get(0);
 
-                String mainTemp = String.format("%.0f", weather.getMain().getTemp());
-                tempTextView.setText(mainTemp + "º");
-               // weatherTypeTextView.setText(weather.ge().getMain());
-                minMaxTempTextView.setText(weather.getMain().getTempMin() + "º / " + weather.getMain().getTempMax() + "º");
-                feelsLikeTextView.setText("Feels like " + weather.getMain().getFeelsLike() + "º");
+                    String mainTemp = String.format(Locale.ENGLISH, "%.0f", weather.getMain().getTemp());
+                    String tempText = mainTemp + "º";
+                    String minMaxText = weather.getMain().getTempMin() + "º / " + weather.getMain().getTempMax() + "º";
+                    String feelLikeText = "Feels like " + weather.getMain().getFeelsLike() + "º";
 
-
+                    tempTextView.setText(tempText);
+                    minMaxTempTextView.setText(minMaxText);
+                    feelsLikeTextView.setText(feelLikeText);
+                }
             }
         });
 
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        // Forward results to EasyPermissions
-        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
-    }
-
-    @AfterPermissionGranted(REQUEST_LOCATION_PERMISSION)
-    public void requestLocationPermission() {
-        String[] perms = {Manifest.permission.ACCESS_FINE_LOCATION};
-        if(EasyPermissions.hasPermissions(this, perms)) {
-            Toast.makeText(this, "Permission already granted", Toast.LENGTH_SHORT).show();
-        }
-        else {
-            EasyPermissions.requestPermissions(this, "Please grant the location permission", REQUEST_LOCATION_PERMISSION, perms);
-        }
-    }
-
     public ArrayList<Weather> getWeatherForecast(Call<ForecastResult> call){
-
-        weatherArrayList.clear();
-        tomorrowWeatherArrayList.clear();
 
         ArrayList<Weather> listWeather = new ArrayList<>();
 
         call.enqueue(new Callback<ForecastResult>() {
             @Override
-            public void onResponse(Call<ForecastResult> call, Response<ForecastResult> response) {
+            public void onResponse(@NonNull Call<ForecastResult> call, @NonNull Response<ForecastResult> response) {
 
+                if(response.raw().code() == 200) {
 
-                if(response.raw().code() != 404){
+                    weatherArrayList.clear();
+                    tomorrowWeatherArrayList.clear();
 
-                    for(int i = 0; i < response.body().getListWeather().size(); i++) {
+                    for (int i = 0; i < response.body().getListWeather().size(); i++) {
 
                         Weather weather = response.body().getListWeather().get(i);
                         WeatherDbHelper weatherDbHelper = new WeatherDbHelper(getApplicationContext());
-                        weatherDbHelper.addWeather2(weather);
+                        weather.setCityId(response.body().getCity().getId());
+                        weatherDbHelper.checkCity(currentWeather);
+
+                        try {
+                            if (!weatherDbHelper.checkDates(weather)) {
+                                weatherDbHelper.addWeather2(weather);
+                            }
+                        } catch (ParseException e) {
+                            e.printStackTrace();
+                        }
 
                         try {
                             if (isDateSame(weather.getDateCalendar(), cal)) {
@@ -282,7 +316,6 @@ public class MainActivity extends AppCompatActivity {
                             } else {
                                 weatherArrayList.add(weather);
                             }
-
                             cal.add(Calendar.DATE, +1);
                             if (isDateSame(weather.getDateCalendar(), cal)) {
                                 tomorrowWeatherArrayList.add(weather);
@@ -293,22 +326,17 @@ public class MainActivity extends AppCompatActivity {
                         }
 
                         cal.add(Calendar.DATE, -1);
-
                     }
-
-                    }
-
-
                     currentWeatherArrayList = listWeather;
 
                     adapter.setWeatherList(currentWeatherArrayList);
                     adapter.notifyDataSetChanged();
+                }
 
 
             }
             @Override
-            public void onFailure(Call<ForecastResult> call, Throwable t) {
-                Log.d("Error", t.getMessage());
+            public void onFailure(@NonNull Call<ForecastResult> call, @NonNull Throwable t) {
             }
         });
 
@@ -316,76 +344,49 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private boolean isDateSame(Calendar c1, Calendar c2) {
-        return (c1.get(Calendar.DAY_OF_MONTH) == c2.get(Calendar.DAY_OF_MONTH));
-    }
-
-    private void updateWeatherDay(WeatherResult newWeather){
-
-        String mainTemp = String.format("%.0f", newWeather.getMain().getTemp());
-
-        tempTextView.setText(mainTemp + "º");
-        pressureTextView.setText(newWeather.getMain().getPressure().toString());
-        //windTextView.setText(newWeather.getWind().getSpeed().toString());
-        weatherTypeTextView.setText(newWeather.getWeatherList().get(0).getMain());
-        minMaxTempTextView.setText(newWeather.getMain().getTempMin() + "º / " + newWeather.getMain().getTempMax() + "º");
-        feelsLikeTextView.setText("Feels like " + newWeather.getMain().getFeelsLike() + "º");
-        sunriseTextView.setText(newWeather.getCity().getmSunrise());
-        sunsetTextView.setText(newWeather.getCity().getmSunset());
-        humidityTextView.setText(newWeather.getMain().getHumidity().toString() + "%");
-
-        Picasso.with(getApplicationContext()).load("https://openweathermap.org/img/wn/" + newWeather.getWeatherList().get(0).getIcon() +  "@2x.png").into(weatherIcon);
-
-    }
-
-    private void updateWeatherDay(Weather newWeather){
-
-        String mainTemp = String.format("%.0f", newWeather.getMain().getTemp());
-
-        tempTextView.setText(mainTemp + "º");
-        pressureTextView.setText(newWeather.getMain().getPressure().toString());
-        windTextView.setText(newWeather.getWind().getSpeed().toString());
-        weatherTypeTextView.setText(newWeather.getWeatherList().get(0).getMain());
-        minMaxTempTextView.setText(newWeather.getMain().getTempMin() + "º / " + newWeather.getMain().getTempMax() + "º");
-        feelsLikeTextView.setText("Feels like " + newWeather.getMain().getFeelsLike() + "º");
-        humidityTextView.setText(newWeather.getMain().getHumidity().toString() + "%");
-
-        Picasso.with(getApplicationContext()).load("https://openweathermap.org/img/wn/" + newWeather.getWeatherList().get(0).getIcon() +  "@2x.png").into(weatherIcon);
-
-    }
-
     private final LocationListener locationListener = new LocationListener() {
 
         public void onLocationChanged(Location location) {
 
-            weatherArrayList.clear();
-            tomorrowWeatherArrayList.clear();
-
-             double longitude = location.getLongitude();
-             double latitude = location.getLatitude();
+            double longitude = location.getLongitude();
+            double latitude = location.getLatitude();
 
             GetDataService retrofitInterface = RetrofitClientInstance.getRetrofitInstance().create(GetDataService.class);
             Call<WeatherResult> call = retrofitInterface.getWeatherCoord(String.valueOf(latitude), String.valueOf(longitude), API_KEY, "Metric");
 
             call.enqueue(new Callback<WeatherResult>() {
                 @Override
-                public void onResponse(Call<WeatherResult> call, Response<WeatherResult> response) {
+                public void onResponse(@NonNull Call<WeatherResult> call, @NonNull Response<WeatherResult> response) {
 
+                    assert response.body() != null;
+                    if(response.raw().code() == 200 && response.body().getCityId() != 0){
+                        weatherArrayList.clear();
+                        tomorrowWeatherArrayList.clear();
                         currentWeather = response.body();
 
                         WeatherDbHelper weatherDbHelper = new WeatherDbHelper(getApplicationContext());
 
                         weatherDbHelper.checkWeatherType(response.body().getWeatherList().get(0));
-                        weatherDbHelper.addWeather(currentWeather);
+                        try {
+                            if(!weatherDbHelper.checkDates(currentWeather)){
+                                weatherDbHelper.addWeather(currentWeather);
+                                updateWeatherDay(currentWeather);
+                            }
+                        } catch (ParseException e) {
+                            e.printStackTrace();
+                        }
                         updateWeatherDay(currentWeather);
 
                         Call<ForecastResult> callForecast = retrofitInterface.getForecastCoord(String.valueOf(latitude), String.valueOf(longitude), API_KEY, "Metric");
                         getWeatherForecast(callForecast);
+                    } else {
+                        Toast.makeText(getApplicationContext(), "The location is not avaible", Toast.LENGTH_LONG).show();
+                    }
 
                 }
 
                 @Override
-                public void onFailure(Call<WeatherResult> call, Throwable t) {
+                public void onFailure(@NonNull Call<WeatherResult> call, @NonNull Throwable t) {
 
                 }
             });
@@ -408,5 +409,133 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        if(resultCode == Activity.RESULT_OK && data != null){
+            String cityName = data.getStringExtra(TestActivity.CITY_DATA);
+            int cityId = data.getIntExtra(TestActivity.CITY_DATA2, 0);
+
+            if(!isNetworkAvailable()){
+                Log.d("No internet", "no");
+                   WeatherDbHelper weatherDbHelper = new WeatherDbHelper(getApplicationContext());
+                ArrayList<Weather> tempArrayList = weatherDbHelper.getForecastCity(String.valueOf(cityId));
+
+                currentWeatherArrayList.clear();
+                tomorrowWeatherArrayList.clear();
+                weatherArrayList.clear();
+
+                try {
+                    cal = currentWeather.getDateCalendar();
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+
+                for(int i = 0; i < tempArrayList.size(); i++){
+                    try {
+                        if (isDateSame(tempArrayList.get(i).getDateCalendar(), cal)) {
+                            currentWeatherArrayList.add(tempArrayList.get(i));
+                        } else {
+                            weatherArrayList.add(tempArrayList.get(i));
+                        }
+
+                        cal.add(Calendar.DATE, +1);
+                        if (isDateSame(tempArrayList.get(i).getDateCalendar(), cal)) {
+                            tomorrowWeatherArrayList.add(tempArrayList.get(i));
+                        }
+                        cal.add(Calendar.DATE, -1);
+                    } catch (ParseException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                adapter.setWeatherList(currentWeatherArrayList);
+                adapter.notifyDataSetChanged();
+            } else {
+                GetDataService retrofitInterface = RetrofitClientInstance.getRetrofitInstance().create(GetDataService.class);
+                Call<WeatherResult> call = retrofitInterface.getWeather(cityName, API_KEY, "Metric");
+                Call<ForecastResult> callForecast = retrofitInterface.getForecast(cityName, API_KEY, "Metric");
+                getWeatherByCity(call);
+                getWeatherForecast(callForecast);
+            }
+
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private void updateWeatherDay(WeatherResult newWeather){
+
+        String mainTemp = String.format(Locale.ENGLISH, "%.0f", newWeather.getMain().getTemp()) + "º";
+        String pressure = newWeather.getMain().getPressure().toString();
+        String windSpeed = newWeather.getWind().getSpeed().toString();
+        String minMaxTemp = newWeather.getMain().getTempMin() + "º / " + newWeather.getMain().getTempMax() + "º";
+        String feelsLikeText = "Feels like " + newWeather.getMain().getFeelsLike() + "º";
+        String humidtyText = newWeather.getMain().getHumidity().toString() + "%";
+        String cityText = newWeather.getCityName() + ", " + newWeather.getCity().getCountry();
+
+        tempTextView.setText(mainTemp);
+        pressureTextView.setText(pressure);
+        windTextView.setText(windSpeed);
+        weatherTypeTextView.setText(newWeather.getWeatherList().get(0).getMain());
+        minMaxTempTextView.setText(minMaxTemp);
+        feelsLikeTextView.setText(feelsLikeText);
+        sunriseTextView.setText(newWeather.getCity().getmSunrise());
+        sunsetTextView.setText(newWeather.getCity().getmSunset());
+        humidityTextView.setText(humidtyText);
+        cityTextView.setText(cityText);
+
+        Picasso.with(getApplicationContext()).load("https://openweathermap.org/img/wn/" + newWeather.getWeatherList().get(0).getIcon() +  "@2x.png").into(weatherIcon);
+
+    }
+
+    private void updateWeatherDay(Weather newWeather){
+
+        String mainTemp = String.format(Locale.ENGLISH, "%.0f", newWeather.getMain().getTemp()) + "º";
+        String pressure = newWeather.getMain().getPressure().toString();
+        String windSpeed = newWeather.getWind().getSpeed().toString();
+        String minMaxTemp = newWeather.getMain().getTempMin() + "º / " + newWeather.getMain().getTempMax() + "º";
+        String feelsLikeText = "Feels like " + newWeather.getMain().getFeelsLike() + "º";
+        String humidtyText = newWeather.getMain().getHumidity().toString() + "%";
+        //String cityText = newWeather.get() + ", " + newWeather.getCity().getCountry();
+
+        tempTextView.setText(mainTemp);
+        pressureTextView.setText(pressure);
+        windTextView.setText(windSpeed);
+        weatherTypeTextView.setText(newWeather.getWeatherList().get(0).getMain());
+        minMaxTempTextView.setText(minMaxTemp);
+        feelsLikeTextView.setText(feelsLikeText);
+        humidityTextView.setText(humidtyText);
+
+        Picasso.with(getApplicationContext()).load("https://openweathermap.org/img/wn/" + newWeather.getWeatherList().get(0).getIcon() +  "@2x.png").into(weatherIcon);
+
+    }
+
+    public boolean isDateSame(Calendar c1, Calendar c2) {
+        return (c1.get(Calendar.DAY_OF_MONTH) == c2.get(Calendar.DAY_OF_MONTH));
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
+    }
+
+    @AfterPermissionGranted(REQUEST_LOCATION_PERMISSION)
+    public void requestLocationPermission() {
+        String[] perms = {Manifest.permission.ACCESS_FINE_LOCATION};
+        if(EasyPermissions.hasPermissions(this, perms)) {
+            Toast.makeText(this, "Permission already granted", Toast.LENGTH_SHORT).show();
+        }
+        else {
+            EasyPermissions.requestPermissions(this, "Please grant the location permission", REQUEST_LOCATION_PERMISSION, perms);
+        }
+    }
+
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+    }
 
 }

@@ -5,11 +5,15 @@ import com.google.gson.annotations.SerializedName;
 import java.io.Serializable;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 
 public class City implements Serializable {
 
     @SerializedName("id")
     private Integer id;
+
+     @SerializedName("name")
+     private String name;
 
     @SerializedName("sunrise")
     private String sunrise;
@@ -52,20 +56,28 @@ public class City implements Serializable {
         this.country = country;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public String getmSunrise() {
         long timestampLong = Long.parseLong(sunrise)*1000;
         Date d = new Date(timestampLong);
         Calendar c = Calendar.getInstance();
         c.setTime(d);
-        return String.format("%02d", c.get(Calendar.HOUR_OF_DAY)) + ":" + String.format("%02d", c.get(Calendar.MINUTE));
+        return String.format(Locale.ENGLISH, "%02d", c.get(Calendar.HOUR_OF_DAY)) + ":" + String.format(Locale.ENGLISH,"%02d", c.get(Calendar.MINUTE));
     }
 
     public String getmSunset() {
-        long timestampLong = Long.parseLong(sunrise)*1000;
+        long timestampLong = Long.parseLong(sunset)*1000;
         Date d = new Date(timestampLong);
         Calendar c = Calendar.getInstance();
         c.setTime(d);
-        return String.format("%02d", c.get(Calendar.HOUR_OF_DAY)) + ":" + String.format("%02d", c.get(Calendar.MINUTE));
+        return String.format(Locale.ENGLISH,"%02d", c.get(Calendar.HOUR_OF_DAY)) + ":" + String.format(Locale.ENGLISH,"%02d", c.get(Calendar.MINUTE));
     }
 
 }
