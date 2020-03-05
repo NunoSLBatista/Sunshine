@@ -147,9 +147,9 @@ public class MainActivity extends AppCompatActivity {
         });
 
         next5DaysBox.setOnClickListener(v -> {
-             Intent forecastActivity = new Intent(getApplicationContext(), ForecastActivity.class);
-             forecastActivity.putExtra("listForecast", weatherArrayList);
-             startActivity(forecastActivity);
+             Intent forecastActivity2 = new Intent(getApplicationContext(), ForecastActivity2.class);
+             forecastActivity2.putExtra("listForecast", weatherArrayList);
+             startActivity(forecastActivity2);
         });
 
         cityTextView.setOnClickListener(v -> {
@@ -163,6 +163,8 @@ public class MainActivity extends AppCompatActivity {
         if(weatherList.size() > 0){
 
             WeatherResult weather = weatherList.get(weatherList.size() - 1);
+            weather.setCityId(weather.getCity().getId());
+            weather.setCityName(weather.getCity().getName());
             updateWeatherDay(weather);
 
             currentWeather = weather;
@@ -265,17 +267,58 @@ public class MainActivity extends AppCompatActivity {
                 if(t.getMessage() != null && t.getMessage().contains("No address associated with hostname")){
 
                     WeatherDbHelper db = new WeatherDbHelper(getApplicationContext());
-                    List<WeatherResult> weatherList = db.getAll();
-                    WeatherResult weather = weatherList.get(0);
+                    City city = db.getCityId(citySearch.getText().toString());
+                    List<WeatherResult> weatherList = db.getWeatherCity(city.getId().toString());
+                    ArrayList<Weather> forecastList = db.getForecastCity(city.getId().toString());
+                    if(weatherList.size() > 0 && forecastList.size() > 0){
 
-                    String mainTemp = String.format(Locale.ENGLISH, "%.0f", weather.getMain().getTemp());
-                    String tempText = mainTemp + "º";
-                    String minMaxText = weather.getMain().getTempMin() + "º / " + weather.getMain().getTempMax() + "º";
-                    String feelLikeText = "Feels like " + weather.getMain().getFeelsLike() + "º";
+                        WeatherResult weather = weatherList.get(0);
+                        currentWeather = weather;
 
-                    tempTextView.setText(tempText);
-                    minMaxTempTextView.setText(minMaxText);
-                    feelsLikeTextView.setText(feelLikeText);
+                        String mainTemp = String.format(Locale.ENGLISH, "%.0f", weather.getMain().getTemp());
+                        String tempText = mainTemp + "º";
+                        String minMaxText = weather.getMain().getTempMin() + "º / " + weather.getMain().getTempMax() + "º";
+                        String feelLikeText = "Feels like " + weather.getMain().getFeelsLike() + "º";
+
+                        tempTextView.setText(tempText);
+                        minMaxTempTextView.setText(minMaxText);
+                        feelsLikeTextView.setText(feelLikeText);
+
+                        weatherArrayList.clear();
+                        tomorrowWeatherArrayList.clear();
+                        currentWeatherArrayList.clear();
+
+                        try {
+                            cal = currentWeather.getDateCalendar();
+                        } catch (ParseException e) {
+                            e.printStackTrace();
+                        }
+
+                        for(int i = 0; i < forecastList.size(); i++){
+                            try {
+                                if (isDateSame(forecastList.get(i).getDateCalendar(), cal)) {
+                                    currentWeatherArrayList.add(forecastList.get(i));
+                                    weatherArrayList.add(forecastList.get(i));
+                                } else {
+                                    weatherArrayList.add(forecastList.get(i));
+                                }
+
+                                cal.add(Calendar.DATE, +1);
+                                if (isDateSame(forecastList.get(i).getDateCalendar(), cal)) {
+                                    tomorrowWeatherArrayList.add(forecastList.get(i));
+                                }
+                                cal.add(Calendar.DATE, -1);
+                            } catch (ParseException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        adapter.setWeatherList(currentWeatherArrayList);
+                        adapter.notifyDataSetChanged();
+
+                    } else {
+                        Toast.makeText(getApplicationContext(), "The app doesn't have information for the city locally. Please turn on the Internet.", Toast.LENGTH_LONG).show();
+                    }
                 }
             }
         });
@@ -313,6 +356,7 @@ public class MainActivity extends AppCompatActivity {
                         try {
                             if (isDateSame(weather.getDateCalendar(), cal)) {
                                 listWeather.add(weather);
+                                weatherArrayList.add(weather);
                             } else {
                                 weatherArrayList.add(weather);
                             }
@@ -370,7 +414,6 @@ public class MainActivity extends AppCompatActivity {
                         try {
                             if(!weatherDbHelper.checkDates(currentWeather)){
                                 weatherDbHelper.addWeather(currentWeather);
-                                updateWeatherDay(currentWeather);
                             }
                         } catch (ParseException e) {
                             e.printStackTrace();
@@ -414,10 +457,14 @@ public class MainActivity extends AppCompatActivity {
         if(resultCode == Activity.RESULT_OK && data != null){
             String cityName = data.getStringExtra(TestActivity.CITY_DATA);
             int cityId = data.getIntExtra(TestActivity.CITY_DATA2, 0);
+            cityTextView.setText(cityName);
 
             if(!isNetworkAvailable()){
-                Log.d("No internet", "no");
-                   WeatherDbHelper weatherDbHelper = new WeatherDbHelper(getApplicationContext());
+                WeatherDbHelper weatherDbHelper = new WeatherDbHelper(getApplicationContext());
+                ArrayList<WeatherResult> weatherResultList = weatherDbHelper.getWeatherCity(String.valueOf(cityId));
+                currentWeather = weatherResultList.get(0);
+                updateWeatherDay(currentWeather);
+
                 ArrayList<Weather> tempArrayList = weatherDbHelper.getForecastCity(String.valueOf(cityId));
 
                 currentWeatherArrayList.clear();
@@ -429,20 +476,22 @@ public class MainActivity extends AppCompatActivity {
                 } catch (ParseException e) {
                     e.printStackTrace();
                 }
-
+                Calendar cal2 = Calendar.getInstance();
                 for(int i = 0; i < tempArrayList.size(); i++){
+                    tempArrayList.get(i).setCityId(cityId);
                     try {
-                        if (isDateSame(tempArrayList.get(i).getDateCalendar(), cal)) {
+                        if (isDateSame(tempArrayList.get(i).getDateCalendar(), cal2)) {
                             currentWeatherArrayList.add(tempArrayList.get(i));
+                            weatherArrayList.add(tempArrayList.get(i));
                         } else {
                             weatherArrayList.add(tempArrayList.get(i));
                         }
 
-                        cal.add(Calendar.DATE, +1);
-                        if (isDateSame(tempArrayList.get(i).getDateCalendar(), cal)) {
+                        cal2.add(Calendar.DATE, +1);
+                        if (isDateSame(tempArrayList.get(i).getDateCalendar(), cal2)) {
                             tomorrowWeatherArrayList.add(tempArrayList.get(i));
                         }
-                        cal.add(Calendar.DATE, -1);
+                        cal2.add(Calendar.DATE, -1);
                     } catch (ParseException e) {
                         e.printStackTrace();
                     }
@@ -470,7 +519,15 @@ public class MainActivity extends AppCompatActivity {
         String minMaxTemp = newWeather.getMain().getTempMin() + "º / " + newWeather.getMain().getTempMax() + "º";
         String feelsLikeText = "Feels like " + newWeather.getMain().getFeelsLike() + "º";
         String humidtyText = newWeather.getMain().getHumidity().toString() + "%";
-        String cityText = newWeather.getCityName() + ", " + newWeather.getCity().getCountry();
+        if(newWeather.getCityId() != null && newWeather.getCityName() != null){
+            String cityText = newWeather.getCityName() + ", " + newWeather.getCity().getCountry();
+            cityTextView.setText(cityText);
+        } else {
+            WeatherDbHelper db = new WeatherDbHelper(this);
+            City city = db.getCity(newWeather.getCity().getId().toString());
+            String cityText = city.getName() + ", " + city.getCountry();
+            cityTextView.setText(cityText);
+        }
 
         tempTextView.setText(mainTemp);
         pressureTextView.setText(pressure);
@@ -481,7 +538,10 @@ public class MainActivity extends AppCompatActivity {
         sunriseTextView.setText(newWeather.getCity().getmSunrise());
         sunsetTextView.setText(newWeather.getCity().getmSunset());
         humidityTextView.setText(humidtyText);
-        cityTextView.setText(cityText);
+       /* if(newWeather.getCityName() != null){
+            cityTextView.setText(cityText);
+        } */
+
 
         Picasso.with(getApplicationContext()).load("https://openweathermap.org/img/wn/" + newWeather.getWeatherList().get(0).getIcon() +  "@2x.png").into(weatherIcon);
 
@@ -495,7 +555,12 @@ public class MainActivity extends AppCompatActivity {
         String minMaxTemp = newWeather.getMain().getTempMin() + "º / " + newWeather.getMain().getTempMax() + "º";
         String feelsLikeText = "Feels like " + newWeather.getMain().getFeelsLike() + "º";
         String humidtyText = newWeather.getMain().getHumidity().toString() + "%";
-        //String cityText = newWeather.get() + ", " + newWeather.getCity().getCountry();
+        WeatherDbHelper db = new WeatherDbHelper(this);
+        if(newWeather.getCityId() != null){
+            City city = db.getCity(newWeather.getCityId().toString());
+            String cityText = city.getName() + ", " + city.getCountry();
+            cityTextView.setText(cityText);
+        }
 
         tempTextView.setText(mainTemp);
         pressureTextView.setText(pressure);

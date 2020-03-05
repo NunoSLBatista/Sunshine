@@ -28,6 +28,8 @@ public class Weather implements Serializable {
 
     private Integer cityId;
 
+    private Boolean isExpanded = false;
+
 
     public Main getMain() {
         return main;
@@ -61,6 +63,14 @@ public class Weather implements Serializable {
         this.date = date;
     }
 
+    public Boolean getExpanded() {
+        return isExpanded;
+    }
+
+    public void setExpanded(Boolean expanded) {
+        isExpanded = expanded;
+    }
+
     public Calendar getDateCalendar() throws ParseException {
         Calendar cal = Calendar.getInstance();
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -68,6 +78,13 @@ public class Weather implements Serializable {
         Date d = dateFormat.parse(this.getDate());
         cal.setTime(d);
         return cal;
+    }
+    public String getDateFormated() throws ParseException {
+        Calendar cal = Calendar.getInstance();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Date d = dateFormat.parse(this.getDate());
+        cal.setTime(d);
+        return String.format("%02d", cal.get(Calendar.HOUR_OF_DAY)) + ":" + String.format("%02d", cal.get(Calendar.MINUTE));
     }
 
     public Integer getCityId() {

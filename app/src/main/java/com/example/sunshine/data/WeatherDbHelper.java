@@ -174,6 +174,27 @@ public class WeatherDbHelper extends SQLiteOpenHelper {
 
     }
 
+
+    public City getCityId(String name){
+
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        City city = new City();
+        String selection = CityEntry.COLUMN_NAME + " = ?";
+        String[] selectionArgs = {name};
+
+        Cursor cursor = db.query(CityEntry.TABLE_NAME, null, selection, selectionArgs, null, null,null, null);
+
+        if(cursor.moveToFirst()){
+            city.setId(cursor.getInt(cursor.getColumnIndex(CityEntry.COLUMN_ID)));
+            city.setName(cursor.getString(cursor.getColumnIndex(CityEntry.COLUMN_NAME)));
+            city.setCountry(cursor.getString(cursor.getColumnIndex(CityEntry.COLUMN_COUNTRY)));
+        }
+
+        cursor.close();
+        return city;
+    }
+
     public long addWeather2(Weather weather){
 
         SQLiteDatabase db = this.getWritableDatabase();
@@ -410,6 +431,26 @@ public class WeatherDbHelper extends SQLiteOpenHelper {
         }
         cursor.close();
 
+    }
+
+    public City getCity(String id){
+
+        SQLiteDatabase db = this.getWritableDatabase();
+        City city = new City();
+
+        String selection = CityEntry.COLUMN_ID + " = ?";
+        String[] selectionArgs = {id};
+
+        Cursor cursor = db.query(CityEntry.TABLE_NAME, null, selection, selectionArgs, null, null, null, null);
+
+        if(cursor.moveToFirst()){
+            city.setName(cursor.getString(cursor.getColumnIndex(CityEntry.COLUMN_NAME)));
+            city.setCountry(cursor.getString(cursor.getColumnIndex(CityEntry.COLUMN_COUNTRY)));
+            city.setId(cursor.getInt(cursor.getColumnIndex(CityEntry.COLUMN_ID)));
+        }
+        cursor.close();
+
+        return city;
     }
 
     public ArrayList<City> getAllCities(){
