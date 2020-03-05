@@ -22,7 +22,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="0.1"
             android:text="13:00"
-            android:textSize="18sp"
+            android:textSize="20sp"
             tools:layout_editor_absoluteX="18dp"
             tools:layout_editor_absoluteY="21dp" />
 
@@ -33,16 +33,6 @@
             app:srcCompat="@drawable/sunset_icon"
             tools:layout_editor_absoluteX="95dp"
             tools:layout_editor_absoluteY="16dp" />
-
-        <TextView
-            android:id="@+id/minTemp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.05"
-            android:gravity="end"
-            android:text="-3º"
-            android:textColor="@color/softDark"
-            android:textSize="26sp" />
 
         <TextView
             android:id="@+id/maxTemp"

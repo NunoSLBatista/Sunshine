@@ -62,7 +62,7 @@ public class Forecast3Adapter extends RecyclerView.Adapter<Forecast3Adapter.Weat
             e.printStackTrace();
         }
 
-        holder.txtMinTemp.setText(minTemp);
+      //  holder.txtMinTemp.setText(minTemp);
         holder.textMaxTemp.setText(maxTemp);
         holder.timeTextView.setText(timeText);
         holder.pressure.setText(pressure);
@@ -72,6 +72,11 @@ public class Forecast3Adapter extends RecyclerView.Adapter<Forecast3Adapter.Weat
             @Override
             public void onClick(View v) {
                 boolean expandend = weatherList.get(position).getExpanded();
+                if(!expandend){
+                    holder.add.setImageResource(R.drawable.add_icon);
+                } else {
+                    holder.add.setImageResource(R.drawable.icon_minus);
+                }
                 weatherList.get(position).setExpanded(!expandend);
                 notifyItemChanged(position);
             }
@@ -96,18 +101,20 @@ public class Forecast3Adapter extends RecyclerView.Adapter<Forecast3Adapter.Weat
         private TextView pressure;
         private ImageView iconWeather;
         private LinearLayout subItem;
+        private ImageView add;
 
         public WeatherHolder(View itemView) {
             super(itemView);
 
             timeTextView = itemView.findViewById(R.id.timeTextView);
             textMaxTemp = itemView.findViewById(R.id.maxTemp);
-            txtMinTemp = itemView.findViewById(R.id.minTemp);
+        //    txtMinTemp = itemView.findViewById(R.id.minTemp);
             iconWeather = itemView.findViewById(R.id.iconWeather);
             subItem = itemView.findViewById(R.id.sub_item);
             humidityTextView = itemView.findViewById(R.id.humdityTextView);
             windTextView = itemView.findViewById(R.id.windTextView);
             pressure = itemView.findViewById(R.id.pressureTextView);
+            add = itemView.findViewById(R.id.add);
 
 
         }

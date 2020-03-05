@@ -17,6 +17,8 @@
             app:tabIconTint="@color/darkGrey"
             app:tabMode="scrollable"
             android:layout_height="wrap_content"/>
+
+
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.viewpager2.widget.ViewPager2

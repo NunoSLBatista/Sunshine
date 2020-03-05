@@ -5,8 +5,6 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Adapter;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -16,9 +14,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.sunshine.adapters.Forecast3Adapter;
 import com.example.sunshine.models.ForecastResult;
-import com.example.sunshine.models.Weather;
-
-import java.util.ArrayList;
 
 public class ForecastFragment extends Fragment {
 
@@ -49,5 +44,5 @@ public class ForecastFragment extends Fragment {
 
     }
 
-
 }
+
