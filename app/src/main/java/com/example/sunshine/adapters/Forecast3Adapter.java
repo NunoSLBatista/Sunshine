@@ -17,6 +17,7 @@ import com.squareup.picasso.Picasso;
 
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Locale;
 
 public class Forecast3Adapter extends RecyclerView.Adapter<Forecast3Adapter.WeatherHolder> {
 
@@ -45,14 +46,20 @@ public class Forecast3Adapter extends RecyclerView.Adapter<Forecast3Adapter.Weat
 
         boolean expandend = weatherList.get(position).getExpanded();
 
-        if(expandend){
+        if (expandend) {
             holder.subItem.setVisibility(View.VISIBLE);
         } else {
             holder.subItem.setVisibility(View.GONE);
         }
 
+        if (expandend) {
+            holder.add.setImageResource(R.drawable.icon_minus);
+        } else {
+            holder.add.setImageResource(R.drawable.add_icon);
+        }
+
         String minTemp = weatherList.get(position).getMain().getTempMin().toString() + "º";
-        String maxTemp = weatherList.get(position).getMain().getTempMax().toString() + "º";
+        String maxTemp = String.format(Locale.ENGLISH, "%.0f", weatherList.get(position).getMain().getTempMax()) + "º";
         String humidity = weatherList.get(position).getMain().getHumidity().toString() + "%";
         String pressure = weatherList.get(position).getMain().getPressure().toString();
         String timeText = null;
@@ -62,7 +69,7 @@ public class Forecast3Adapter extends RecyclerView.Adapter<Forecast3Adapter.Weat
             e.printStackTrace();
         }
 
-      //  holder.txtMinTemp.setText(minTemp);
+        //  holder.txtMinTemp.setText(minTemp);
         holder.textMaxTemp.setText(maxTemp);
         holder.timeTextView.setText(timeText);
         holder.pressure.setText(pressure);
@@ -71,18 +78,14 @@ public class Forecast3Adapter extends RecyclerView.Adapter<Forecast3Adapter.Weat
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                boolean expandend = weatherList.get(position).getExpanded();
-                if(!expandend){
-                    holder.add.setImageResource(R.drawable.add_icon);
-                } else {
-                    holder.add.setImageResource(R.drawable.icon_minus);
-                }
-                weatherList.get(position).setExpanded(!expandend);
+                boolean expandend = !weatherList.get(position).getExpanded();
+                weatherList.get(position).setExpanded(expandend);
                 notifyItemChanged(position);
             }
         });
 
         Picasso.with(mContext).load("https://openweathermap.org/img/wn/" + weatherList.get(position).getWeatherList().get(0).getIcon() + "@2x.png").into(holder.iconWeather);
+
     }
 
     @Override

@@ -71,6 +71,14 @@ public class Weather implements Serializable {
         isExpanded = expanded;
     }
 
+    public Calendar timestampDate() {
+        long timestampLong = Long.parseLong(date)*1000;
+        Date d = new Date(timestampLong);
+        Calendar c = Calendar.getInstance();
+        c.setTime(d);
+        return c;
+    }
+
     public Calendar getDateCalendar() throws ParseException {
         Calendar cal = Calendar.getInstance();
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");

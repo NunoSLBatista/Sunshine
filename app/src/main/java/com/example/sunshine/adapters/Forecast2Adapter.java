@@ -1,6 +1,7 @@
 package com.example.sunshine.adapters;
 
 import android.os.Bundle;
+import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -8,6 +9,7 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Lifecycle;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.example.sunshine.ForecastFragment;
 import com.example.sunshine.models.ForecastResult;
@@ -38,5 +40,6 @@ public class Forecast2Adapter extends FragmentStateAdapter {
     public int getItemCount() {
         return weatherArrayList.size();
     }
+
 
 }

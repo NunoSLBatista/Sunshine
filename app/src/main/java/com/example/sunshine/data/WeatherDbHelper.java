@@ -125,6 +125,8 @@ public class WeatherDbHelper extends SQLiteOpenHelper {
         //Insert the new row, returning the primery key value for the new row
        db.insert(WeatherEntry.TABLE_NAME, null, values);
 
+       db.close();
+
     }
 
 
@@ -212,8 +214,10 @@ public class WeatherDbHelper extends SQLiteOpenHelper {
         values.put(WeatherEntry.COLUMN_DATE, weather.getDate());
 
         //Insert the new row, returning the primery key value for the new row
-        return db.insert(ForecastEntry.TABLE_NAME, null, values);
+        long result = db.insert(ForecastEntry.TABLE_NAME, null, values);
 
+        db.close();
+        return result;
     }
 
 
@@ -282,7 +286,7 @@ public class WeatherDbHelper extends SQLiteOpenHelper {
                 Weather newWeather = new Weather();
                 newWeather.setDate(cursor.getString(cursor.getColumnIndex(WeatherEntry.COLUMN_DATE)));
 
-                if(isDaySame(newWeather.getDateCalendar(), weatherResult.getDateCalendar())){
+                if(isDaySame(newWeather.timestampDate(), weatherResult.getDateCalendar())){
                     return true;
                 }
 
@@ -476,6 +480,7 @@ public class WeatherDbHelper extends SQLiteOpenHelper {
             } while (cursor.moveToNext());
         }
 
+
         cursor.close();
         return cityArrayList;
     }
@@ -531,6 +536,7 @@ public class WeatherDbHelper extends SQLiteOpenHelper {
 
         }
 
+        cursor.close();
         return typeWeather;
 
     }

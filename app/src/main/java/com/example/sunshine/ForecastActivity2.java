@@ -8,6 +8,7 @@ import androidx.viewpager2.widget.ViewPager2;
 import android.os.Bundle;
 
 import com.example.sunshine.adapters.Forecast2Adapter;
+import com.example.sunshine.adapters.RotationPageTransformer;
 import com.example.sunshine.models.ForecastResult;
 import com.example.sunshine.models.Weather;
 import com.google.android.material.tabs.TabLayout;
@@ -31,11 +32,13 @@ public class ForecastActivity2 extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_forecast2);
 
+
         viewPager = findViewById(R.id.view_pager);
         tabLayout = findViewById(R.id.tabs);
 
         weatherArrayList = (ArrayList<Weather>) getIntent().getSerializableExtra("listForecast");
 
+       // weatherArrayList = onNewIntent(getIntent().getSerializableExtra("listForecast"));
 
         for(int i = 0; i < weatherArrayList.size(); i++){
 
@@ -72,6 +75,7 @@ public class ForecastActivity2 extends AppCompatActivity {
 
         pagerAdapter = new Forecast2Adapter(this, dayWeathers);
         viewPager.setAdapter(pagerAdapter);
+        viewPager.setPageTransformer(new RotationPageTransformer());
         Calendar cal = Calendar.getInstance();
         Calendar calTomorrow = Calendar.getInstance();
         calTomorrow.add(Calendar.DATE, +1);

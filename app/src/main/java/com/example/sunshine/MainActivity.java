@@ -4,11 +4,16 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -17,14 +22,15 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.widget.Toolbar;
@@ -74,17 +80,20 @@ public class MainActivity extends AppCompatActivity {
     TextView windTextView;
     TextView pressureTextView;
     TextView cityTextView;
+    RelativeLayout loadingPanel;
     WeatherForecastAdapter adapter;
     Calendar cal = Calendar.getInstance();
     private final int REQUEST_LOCATION_PERMISSION = 1;
     EditText citySearch;
 
+    public static final String CHANNEL_ID = "500";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        loadingPanel = findViewById(R.id.loadingPanel);
         weatherTypeTextView =  findViewById(R.id.modeTextView);
         tempTextView =  findViewById(R.id.tempTextView);
         minMaxTempTextView =  findViewById(R.id.minMaxTemp);
@@ -102,11 +111,10 @@ public class MainActivity extends AppCompatActivity {
         windTextView =  findViewById(R.id.windTxt);
         Toolbar toolbar = findViewById(R.id.tool_bar);
 
-
+        createNotificationChannel();
         adapter = new WeatherForecastAdapter(getApplicationContext());
         weatherHourRecycler.setLayoutManager(new LinearLayoutManager(getApplicationContext(), RecyclerView.HORIZONTAL, false));
         weatherHourRecycler.setAdapter(adapter);
-
 
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
 
@@ -130,6 +138,26 @@ public class MainActivity extends AppCompatActivity {
        lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 1000, locationListener);
 
         todayBox.setOnClickListener(v -> {
+
+            // Create an explicit intent for an Activity in your app
+            Intent intent = new Intent(this, ForecastActivity2.class);
+            intent.putExtra("listForecast", weatherArrayList);
+            intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
+
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setSmallIcon(R.drawable.add_icon)
+                    .setContentTitle("Weather in " + currentWeather.getCityName())
+                    .setContentText("The current temperature is " + currentWeather.getMain().getTemp().toString() + "º")
+                    .setStyle(new NotificationCompat.BigTextStyle()
+                            .bigText("The current temperature is " + currentWeather.getMain().getTemp().toString() + "º"))
+                    .setContentIntent(pendingIntent)
+                    .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+
+            NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+            // notificationId is a unique int for each notification that you must define
+            notificationManager.notify(7, builder.build());
+
             updateWeatherDay(currentWeather);
             adapter.setWeatherList(currentWeatherArrayList);
             adapter.notifyDataSetChanged();
@@ -180,9 +208,9 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     if (isDateSame(tempArrayList.get(i).getDateCalendar(), cal)) {
                         currentWeatherArrayList.add(tempArrayList.get(i));
-                    } else {
-                        weatherArrayList.add(tempArrayList.get(i));
                     }
+
+                    weatherArrayList.add(tempArrayList.get(i));
 
                     cal.add(Calendar.DATE, +1);
                     if (isDateSame(tempArrayList.get(i).getDateCalendar(), cal)) {
@@ -199,6 +227,23 @@ public class MainActivity extends AppCompatActivity {
 
         }
     }
+
+    private void createNotificationChannel() {
+        // Create the NotificationChannel, but only on API 26+ because
+        // the NotificationChannel class is new and not in the support library
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name ="notification";
+            String description = "notification channel";
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+            // Register the channel with the system; you can't change the importance
+            // or other notification behaviors after this
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
+    }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -225,8 +270,6 @@ public class MainActivity extends AppCompatActivity {
             if(weatherForecast != null && weatherForecast.size() > 0){
                 adapter.setWeatherList(weatherForecast);
                 adapter.notifyDataSetChanged();
-            } else {
-
             }
 
             return true;
@@ -237,9 +280,11 @@ public class MainActivity extends AppCompatActivity {
 
     public void getWeatherByCity(Call<WeatherResult> call){
 
+
         call.enqueue(new Callback<WeatherResult>() {
             @Override
             public void onResponse(@NonNull Call<WeatherResult> call, @NonNull Response<WeatherResult> response) {
+
 
                 if(response.raw().code() == 200){
                     currentWeather = response.body();
@@ -257,6 +302,9 @@ public class MainActivity extends AppCompatActivity {
                     updateWeatherDay(currentWeather);
                 } else {
                     Toast.makeText(getApplicationContext(), "Nome da cidade é inválido.", Toast.LENGTH_LONG).show();
+                    updateWeatherDay(currentWeather);
+                    adapter.setWeatherList(currentWeatherArrayList);
+                    adapter.notifyDataSetChanged();
                 }
 
             }
@@ -298,10 +346,9 @@ public class MainActivity extends AppCompatActivity {
                             try {
                                 if (isDateSame(forecastList.get(i).getDateCalendar(), cal)) {
                                     currentWeatherArrayList.add(forecastList.get(i));
-                                    weatherArrayList.add(forecastList.get(i));
-                                } else {
-                                    weatherArrayList.add(forecastList.get(i));
                                 }
+
+                                weatherArrayList.add(forecastList.get(i));
 
                                 cal.add(Calendar.DATE, +1);
                                 if (isDateSame(forecastList.get(i).getDateCalendar(), cal)) {
@@ -329,12 +376,14 @@ public class MainActivity extends AppCompatActivity {
 
         ArrayList<Weather> listWeather = new ArrayList<>();
 
+        loadingPanel.setVisibility(View.VISIBLE);
+
+       // loadingPanel.setVisibility(View.VISIBLE);
         call.enqueue(new Callback<ForecastResult>() {
             @Override
             public void onResponse(@NonNull Call<ForecastResult> call, @NonNull Response<ForecastResult> response) {
 
                 if(response.raw().code() == 200) {
-
                     weatherArrayList.clear();
                     tomorrowWeatherArrayList.clear();
 
@@ -356,10 +405,9 @@ public class MainActivity extends AppCompatActivity {
                         try {
                             if (isDateSame(weather.getDateCalendar(), cal)) {
                                 listWeather.add(weather);
-                                weatherArrayList.add(weather);
-                            } else {
-                                weatherArrayList.add(weather);
                             }
+                            weatherArrayList.add(weather);
+
                             cal.add(Calendar.DATE, +1);
                             if (isDateSame(weather.getDateCalendar(), cal)) {
                                 tomorrowWeatherArrayList.add(weather);
@@ -373,14 +421,18 @@ public class MainActivity extends AppCompatActivity {
                     }
                     currentWeatherArrayList = listWeather;
 
-                    adapter.setWeatherList(currentWeatherArrayList);
-                    adapter.notifyDataSetChanged();
+
                 }
 
+                loadingPanel.setVisibility(View.GONE);
+
+                adapter.setWeatherList(currentWeatherArrayList);
+                adapter.notifyDataSetChanged();
 
             }
             @Override
             public void onFailure(@NonNull Call<ForecastResult> call, @NonNull Throwable t) {
+                loadingPanel.setVisibility(View.GONE);
             }
         });
 
@@ -482,10 +534,9 @@ public class MainActivity extends AppCompatActivity {
                     try {
                         if (isDateSame(tempArrayList.get(i).getDateCalendar(), cal2)) {
                             currentWeatherArrayList.add(tempArrayList.get(i));
-                            weatherArrayList.add(tempArrayList.get(i));
-                        } else {
-                            weatherArrayList.add(tempArrayList.get(i));
                         }
+                            weatherArrayList.add(tempArrayList.get(i));
+
 
                         cal2.add(Calendar.DATE, +1);
                         if (isDateSame(tempArrayList.get(i).getDateCalendar(), cal2)) {

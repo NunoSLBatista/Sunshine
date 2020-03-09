@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -37,7 +38,6 @@ public class ForecastFragment extends Fragment {
         forecastRecycler = view.findViewById(R.id.forecastRecycler2);
         assert getArguments() != null;
         ForecastResult weatherArrayList = (ForecastResult) getArguments().getSerializable("weather");
-
         forecast3Adapter = new Forecast3Adapter(weatherArrayList.getListWeather(), getContext());
         forecastRecycler.setLayoutManager(new LinearLayoutManager(getContext(), RecyclerView.VERTICAL, false));
         forecastRecycler.setAdapter(forecast3Adapter);
