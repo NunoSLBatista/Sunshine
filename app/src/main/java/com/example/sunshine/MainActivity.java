@@ -80,7 +80,6 @@ public class MainActivity extends AppCompatActivity {
     TextView windTextView;
     TextView pressureTextView;
     TextView cityTextView;
-    RelativeLayout loadingPanel;
     WeatherForecastAdapter adapter;
     Calendar cal = Calendar.getInstance();
     private final int REQUEST_LOCATION_PERMISSION = 1;
@@ -93,7 +92,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        loadingPanel = findViewById(R.id.loadingPanel);
         weatherTypeTextView =  findViewById(R.id.modeTextView);
         tempTextView =  findViewById(R.id.tempTextView);
         minMaxTempTextView =  findViewById(R.id.minMaxTemp);
@@ -221,7 +219,7 @@ public class MainActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
             }
-
+            
             adapter.setWeatherList(currentWeatherArrayList);
             adapter.notifyDataSetChanged();
 
@@ -300,11 +298,13 @@ public class MainActivity extends AppCompatActivity {
                         e.printStackTrace();
                     }
                     updateWeatherDay(currentWeather);
+                    
                 } else {
                     Toast.makeText(getApplicationContext(), "Nome da cidade é inválido.", Toast.LENGTH_LONG).show();
                     updateWeatherDay(currentWeather);
                     adapter.setWeatherList(currentWeatherArrayList);
                     adapter.notifyDataSetChanged();
+                    
                 }
 
             }
@@ -366,6 +366,7 @@ public class MainActivity extends AppCompatActivity {
                     } else {
                         Toast.makeText(getApplicationContext(), "The app doesn't have information for the city locally. Please turn on the Internet.", Toast.LENGTH_LONG).show();
                     }
+                    
                 }
             }
         });
@@ -376,9 +377,6 @@ public class MainActivity extends AppCompatActivity {
 
         ArrayList<Weather> listWeather = new ArrayList<>();
 
-        loadingPanel.setVisibility(View.VISIBLE);
-
-       // loadingPanel.setVisibility(View.VISIBLE);
         call.enqueue(new Callback<ForecastResult>() {
             @Override
             public void onResponse(@NonNull Call<ForecastResult> call, @NonNull Response<ForecastResult> response) {
@@ -424,7 +422,7 @@ public class MainActivity extends AppCompatActivity {
 
                 }
 
-                loadingPanel.setVisibility(View.GONE);
+                
 
                 adapter.setWeatherList(currentWeatherArrayList);
                 adapter.notifyDataSetChanged();
@@ -432,7 +430,7 @@ public class MainActivity extends AppCompatActivity {
             }
             @Override
             public void onFailure(@NonNull Call<ForecastResult> call, @NonNull Throwable t) {
-                loadingPanel.setVisibility(View.GONE);
+                
             }
         });
 
@@ -474,7 +472,9 @@ public class MainActivity extends AppCompatActivity {
 
                         Call<ForecastResult> callForecast = retrofitInterface.getForecastCoord(String.valueOf(latitude), String.valueOf(longitude), API_KEY, "Metric");
                         getWeatherForecast(callForecast);
+                        
                     } else {
+                        
                         Toast.makeText(getApplicationContext(), "The location is not avaible", Toast.LENGTH_LONG).show();
                     }
 
@@ -547,7 +547,7 @@ public class MainActivity extends AppCompatActivity {
                         e.printStackTrace();
                     }
                 }
-
+                
                 adapter.setWeatherList(currentWeatherArrayList);
                 adapter.notifyDataSetChanged();
             } else {
